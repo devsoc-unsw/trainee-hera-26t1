@@ -51,6 +51,14 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        atlas: {
+          teal: "#0c3d3f",
+          "teal-hover": "#0f4d50",
+          coral: "#e9a896",
+          mist: "#c5e8ea",
+          slate: "#3a4d56",
+          "slate-hover": "#2f3f47",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
