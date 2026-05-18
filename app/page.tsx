@@ -1,18 +1,7 @@
-import CreateTripBox from "@/components/create-trip-box";
-import JoinTripBox from "@/components/join-trip-box";
+import { LandingHome } from "@/components/landing-home";
 
 const Home = () => {
-  return (
-    <main>
-      <div>
-        <h2>Home</h2>
-        <div>
-          <CreateTripBox />
-          <JoinTripBox />
-        </div>
-      </div>
-    </main>
-  );
+  return <LandingHome />;
 };
 
 export default Home;
