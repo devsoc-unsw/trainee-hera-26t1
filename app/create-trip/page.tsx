@@ -1,11 +1,7 @@
-import NewTripForm from "@/components/create-trip-form";
+import { redirect } from "next/navigation";
 
 const CreateTripPage = () => {
-  return (
-    <main>
-      <NewTripForm />
-    </main>
-  );
-}
+  redirect("/");
+};
 
 export default CreateTripPage;

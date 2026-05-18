@@ -15,7 +15,7 @@ create table public.trips (
   trip_name text not null,
   trip_date timestamptz,
   location uuid references public.locations (id),
-  trip_code text not null
+  trip_code text not null unique
 );
 
 create table public.driving_groups (

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
+import { readApiError } from "@/lib/api-error";
 
 type AddParticipantResponse =
   | { participant: unknown }
@@ -64,21 +65,21 @@ export function JoinTripModal({ open, tripCode, onClose }: JoinTripModalProps) {
         body: JSON.stringify({
           username: username.trim(),
           trip_code: tripCode,
-          password,
+          ...(password.trim() ? { password } : {}),
         }),
       });
 
-      const json = (await res.json()) as AddParticipantResponse;
-
-      if ("error" in json) {
-        setError(json.error);
+      if (!res.ok) {
+        setError(await readApiError(res, "Failed to join trip"));
         return;
       }
 
       onClose();
       router.push("/dashboard");
     } catch {
-      setError("Network error");
+      setError(
+        "Cannot reach the server. Run pnpm dev and add Supabase keys to .env.local (see .env.example).",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -135,7 +136,7 @@ export function JoinTripModal({ open, tripCode, onClose }: JoinTripModalProps) {
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-atlas-teal">
-              Your password
+              Password (optional)
             </span>
             <input
               value={password}
@@ -143,13 +144,12 @@ export function JoinTripModal({ open, tripCode, onClose }: JoinTripModalProps) {
               type="password"
               placeholder={
                 username.trim()
-                  ? `Password for ${username.trim()}`
-                  : "Password for your username"
+                  ? `Optional password for ${username.trim()}`
+                  : "Optional password"
               }
               className={inputClassName}
               disabled={isSubmitting}
               autoComplete="new-password"
-              required
             />
           </label>
 
