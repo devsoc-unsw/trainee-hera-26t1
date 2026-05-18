@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { readApiError } from "@/lib/api-error";
+import { setTripSession } from "@/lib/trip-session";
 import type { Trip } from "@/types/database";
 
 const inputClassName =
@@ -155,6 +156,11 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
             <button
               type="button"
               onClick={() => {
+                setTripSession({
+                  username: username.trim(),
+                  tripId: createdTrip.id,
+                  tripCode: createdTrip.trip_code,
+                });
                 onClose();
                 router.push("/dashboard");
               }}

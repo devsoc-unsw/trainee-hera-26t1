@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { readApiError } from "@/lib/api-error";
+import { setTripSession } from "@/lib/trip-session";
+import type { TripParticipant } from "@/types/database";
 
 type AddParticipantResponse =
   | { participant: unknown }
@@ -73,6 +75,13 @@ export function JoinTripModal({ open, tripCode, onClose }: JoinTripModalProps) {
         setError(await readApiError(res, "Failed to join trip"));
         return;
       }
+
+      const json = (await res.json()) as { participant: TripParticipant };
+      setTripSession({
+        username: json.participant.username,
+        tripId: json.participant.trip_id,
+        tripCode,
+      });
 
       onClose();
       router.push("/dashboard");
