@@ -1,11 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { hashPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/server";
+import { validateTripCode } from "@/lib/trip-code";
 import type { TripParticipantInsert } from "@/types/database";
 
 type AddParticipantBody = {
   username?: string;
   trip_id?: string;
   trip_code?: string;
+  password?: string;
   is_driver?: boolean;
   is_admin?: boolean;
   seats?: number;
@@ -32,11 +35,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "username is required" }, { status: 400 });
   }
 
+  const password =
+    typeof body.password === "string" ? body.password.trim() : "";
+  if (!password) {
+    return NextResponse.json(
+      { error: "password is required for this username" },
+      { status: 400 },
+    );
+  }
+
   if (!tripId && !tripCode) {
     return NextResponse.json(
       { error: "trip_id or trip_code is required" },
       { status: 400 },
     );
+  }
+
+  if (!tripId && tripCode) {
+    const tripCodeError = validateTripCode(tripCode);
+    if (tripCodeError) {
+      return NextResponse.json({ error: tripCodeError }, { status: 400 });
+    }
   }
 
   const supabase = await createClient();
@@ -56,9 +75,12 @@ export async function POST(req: NextRequest) {
     resolvedTripId = trip.id;
   }
 
+  const password_hash = await hashPassword(password);
+
   const row: TripParticipantInsert = {
     username,
     trip_id: resolvedTripId,
+    password_hash,
     is_driver: body.is_driver === true,
     is_admin: body.is_admin === true,
     group_id:
@@ -75,13 +97,18 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from("trip_participants")
     .insert(row)
-    .select()
+    .select(
+      "username, trip_id, group_id, location, is_driver, is_admin, seats",
+    )
     .single();
 
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json(
-        { error: "Username already taken on this trip" },
+        {
+          error:
+            "This username is already on this trip. Sign in with your password instead.",
+        },
         { status: 409 },
       );
     }

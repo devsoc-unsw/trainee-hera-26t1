@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { MapPinPlus } from "lucide-react";
 import { LandingJoinCard } from "@/components/landing-join-card";
 import { LandingNavbar } from "@/components/landing-navbar";
@@ -42,7 +43,9 @@ export function LandingHome() {
               </Link>
             </article>
 
-            <LandingJoinCard cardClassName={cardClass} />
+            <Suspense>
+              <LandingJoinCard cardClassName={cardClass} />
+            </Suspense>
           </div>
         </main>
       </div>
