@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { resolveGoogleMapsAddress } from "@/lib/google-maps";
 import { createClient } from "@/lib/supabase/server";
+import type { LocationInsert } from "@/types/database";
 
 type AddAddressBody = {
-  place_id?: string;
   query?: string;
+  name?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -15,22 +16,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const placeId =
-    typeof body.place_id === "string" ? body.place_id.trim() : "";
   const query = typeof body.query === "string" ? body.query.trim() : "";
+  const name =
+    typeof body.name === "string" && body.name.trim() ? body.name.trim() : null;
 
-  if (!placeId && !query) {
-    return NextResponse.json(
-      { error: "Provide place_id or query" },
-      { status: 400 },
-    );
+  if (!query) {
+    return NextResponse.json({ error: "query is required" }, { status: 400 });
   }
 
-  let googleAddress;
+  let resolved;
   try {
-    googleAddress = await resolveGoogleMapsAddress(
-      placeId ? { place_id: placeId } : { query },
-    );
+    resolved = await resolveGoogleMapsAddress(query);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to resolve address";
@@ -42,16 +38,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  const row: LocationInsert = {
+    name,
+    address: resolved.address,
+    latitude: resolved.latitude,
+    longitude: resolved.longitude,
+  };
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("addresses")
-    .insert({
-      place_id: googleAddress.place_id,
-      formatted_address: googleAddress.formatted_address,
-      latitude: googleAddress.latitude,
-      longitude: googleAddress.longitude,
-    })
+    .from("locations")
+    .insert(row)
     .select()
     .single();
 
@@ -59,5 +57,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ address: data }, { status: 201 });
+  return NextResponse.json({ location: data }, { status: 201 });
 }

@@ -4,7 +4,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:types": "supabase gen types typescript --linked > types/database.ts"
   },
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
