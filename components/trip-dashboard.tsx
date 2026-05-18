@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DriverPassengerSwitch } from "@/components/driver-passenger-switch";
 
 export const TripDashboardSidePanel = () => {
   const [activeView, setActiveView] = useState<
@@ -26,10 +27,14 @@ export const TripDashboardSidePanel = () => {
       </div>
     </div>
   );
-}
+};
 
 const MainView = () => {
-  return <div>Main View Content</div>;
+  return (
+    <div className="flex flex-col gap-4">
+      <DriverPassengerSwitch />
+    </div>
+  );
 };
 
 const TripInfoView = () => {
