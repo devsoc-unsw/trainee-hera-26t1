@@ -1,12 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { hashPassword } from "@/lib/password";
 import { generateTripCode } from "@/lib/trip-code";
 import { createClient } from "@/lib/supabase/server";
-import type { TripInsert } from "@/types/database";
+import type { TripInsert, TripParticipantInsert } from "@/types/database";
 
 type CreateTripBody = {
   trip_name?: string;
   trip_date?: string;
   location?: string;
+  username?: string;
+  password?: string;
 };
 
 const MAX_CODE_ATTEMPTS = 10;
@@ -41,6 +44,18 @@ export async function POST(req: NextRequest) {
     body = (await req.json()) as Partial<CreateTripBody>;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const username =
+    typeof body.username === "string" ? body.username.trim() : "";
+  if (!username) {
+    return NextResponse.json({ error: "Your name is required" }, { status: 400 });
+  }
+
+  const password =
+    typeof body.password === "string" ? body.password.trim() : "";
+  if (!password) {
+    return NextResponse.json({ error: "Password is required" }, { status: 400 });
   }
 
   const trip_name =
@@ -91,22 +106,53 @@ export async function POST(req: NextRequest) {
     trip_code,
   };
 
-  const { data, error } = await supabase
+  const { data: trip, error: tripError } = await supabase
     .from("trips")
     .insert(row)
     .select("id, trip_name, trip_date, location, trip_code, created_at")
     .single();
 
-  if (error) {
-    if (error.code === "23505") {
+  if (tripError) {
+    if (tripError.code === "23505") {
       return NextResponse.json(
         { error: "Trip code already exists, please try again" },
         { status: 409 },
       );
     }
 
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: tripError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ trip: data }, { status: 201 });
+  const password_hash = await hashPassword(password);
+
+  const participantRow: TripParticipantInsert = {
+    username,
+    trip_id: trip.id,
+    password_hash,
+    is_admin: true,
+    is_driver: false,
+  };
+
+  const { data: participant, error: participantError } = await supabase
+    .from("trip_participants")
+    .insert(participantRow)
+    .select(
+      "username, trip_id, group_id, location, is_driver, is_admin, seats",
+    )
+    .single();
+
+  if (participantError) {
+    await supabase.from("trips").delete().eq("id", trip.id);
+
+    if (participantError.code === "23505") {
+      return NextResponse.json(
+        { error: "This username is already on this trip" },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ error: participantError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ trip, participant }, { status: 201 });
 }

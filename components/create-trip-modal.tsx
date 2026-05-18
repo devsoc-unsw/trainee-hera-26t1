@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
+import { readApiError } from "@/lib/api-error";
 import type { Trip } from "@/types/database";
 
 const inputClassName =
@@ -11,7 +12,7 @@ const inputClassName =
 const panelClassName =
   "relative w-full max-w-md rounded-3xl border border-white/45 bg-white/40 p-7 shadow-[0_20px_50px_-12px_rgba(12,61,63,0.2)] backdrop-blur-md sm:p-8";
 
-type CreateTripResponse = { trip: Trip } | { error: string };
+type CreateTripResponse = { trip: Trip };
 
 type CreateTripModalProps = {
   open: boolean;
@@ -20,6 +21,8 @@ type CreateTripModalProps = {
 
 export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
   const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [tripName, setTripName] = useState("");
   const [tripDate, setTripDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +47,8 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
 
   useEffect(() => {
     if (!open) {
+      setUsername("");
+      setPassword("");
       setTripName("");
       setTripDate("");
       setError(null);
@@ -55,6 +60,15 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      setError("Your name is required");
+      return;
+    }
+    if (!password) {
+      setError("Password is required");
+      return;
+    }
     const trimmedName = tripName.trim();
     if (!trimmedName) {
       setError("Trip name is required");
@@ -73,21 +87,24 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          username: trimmedUsername,
+          password,
           trip_name: trimmedName,
           trip_date: tripDate,
         }),
       });
 
-      const json = (await res.json()) as CreateTripResponse;
-
-      if ("error" in json) {
-        setError(json.error);
+      if (!res.ok) {
+        setError(await readApiError(res, "Failed to create trip"));
         return;
       }
 
+      const json = (await res.json()) as CreateTripResponse;
       setCreatedTrip(json.trip);
     } catch {
-      setError("Network error");
+      setError(
+        "Cannot reach the server. Run pnpm dev and add Supabase keys to .env.local (see .env.example).",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -155,10 +172,53 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
               Create a trip
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              Add a name and date — we&apos;ll generate a 6-character invite code.
+              Set up your admin account and trip — we&apos;ll generate a
+              6-character invite code.
             </p>
 
             <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-atlas-teal">
+                  Your name
+                </span>
+                <input
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError(null);
+                  }}
+                  type="text"
+                  placeholder="e.g. alex"
+                  className={inputClassName}
+                  disabled={isSubmitting}
+                  required
+                  autoFocus
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-atlas-teal">
+                  Your password
+                </span>
+                <input
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(null);
+                  }}
+                  type="password"
+                  placeholder={
+                    username.trim()
+                      ? `Password for ${username.trim()}`
+                      : "Password for your account"
+                  }
+                  className={inputClassName}
+                  disabled={isSubmitting}
+                  autoComplete="new-password"
+                  required
+                />
+              </label>
+
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-atlas-teal">
                   Trip name
@@ -174,7 +234,6 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
                   className={inputClassName}
                   disabled={isSubmitting}
                   required
-                  autoFocus
                 />
               </label>
 

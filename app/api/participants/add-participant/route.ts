@@ -37,12 +37,7 @@ export async function POST(req: NextRequest) {
 
   const password =
     typeof body.password === "string" ? body.password.trim() : "";
-  if (!password) {
-    return NextResponse.json(
-      { error: "password is required for this username" },
-      { status: 400 },
-    );
-  }
+  const password_hash = password ? await hashPassword(password) : null;
 
   if (!tripId && !tripCode) {
     return NextResponse.json(
@@ -75,8 +70,6 @@ export async function POST(req: NextRequest) {
     resolvedTripId = trip.id;
   }
 
-  const password_hash = await hashPassword(password);
-
   const row: TripParticipantInsert = {
     username,
     trip_id: resolvedTripId,
@@ -107,7 +100,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "This username is already on this trip. Sign in with your password instead.",
+            "This username is already on this trip.",
         },
         { status: 409 },
       );
