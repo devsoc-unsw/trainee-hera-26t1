@@ -1,9 +1,10 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Loader2, UserPlus } from "lucide-react";
 import { JoinTripModal } from "@/components/join-trip-modal";
+import { readApiError } from "@/lib/api-error";
 import { sanitizeTripCodeInput, validateTripCode } from "@/lib/trip-code";
 
 type JoinMode = "signup" | "login";
@@ -16,39 +17,50 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
   const searchParams = useSearchParams();
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeTripCode, setActiveTripCode] = useState("");
   const [modalMode, setModalMode] = useState<JoinMode>("signup");
+
+  const validateAndOpenModal = useCallback(
+    async (tripCode: string, mode: JoinMode) => {
+      const formatError = validateTripCode(tripCode);
+      if (formatError) {
+        setCodeError(formatError);
+        return;
+      }
+
+      setIsValidating(true);
+      setCodeError(null);
+
+      try {
+        const params = new URLSearchParams({ code: tripCode });
+        const res = await fetch(`/api/trips/validate-code?${params}`);
+
+        if (!res.ok) {
+          setCodeError(await readApiError(res, "Invalid invite code"));
+          return;
+        }
+
+        setActiveTripCode(tripCode);
+        setModalMode(mode);
+        setModalOpen(true);
+      } catch {
+        setCodeError("Could not verify invite code");
+      } finally {
+        setIsValidating(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const fromUrl = searchParams.get("code")?.trim() ?? "";
     if (!fromUrl) return;
 
     setCode(fromUrl);
-    const validationError = validateTripCode(fromUrl);
-    if (validationError) {
-      setCodeError(validationError);
-      return;
-    }
-
-    setCodeError(null);
-    setActiveTripCode(fromUrl);
-    setModalMode("signup");
-    setModalOpen(true);
-  }, [searchParams]);
-
-  const openModal = (tripCode: string, mode: JoinMode) => {
-    const validationError = validateTripCode(tripCode);
-    if (validationError) {
-      setCodeError(validationError);
-      return;
-    }
-
-    setCodeError(null);
-    setActiveTripCode(tripCode);
-    setModalMode(mode);
-    setModalOpen(true);
-  };
+    void validateAndOpenModal(fromUrl, "signup");
+  }, [searchParams, validateAndOpenModal]);
 
   const onOpenSignUp = (e: FormEvent) => {
     e.preventDefault();
@@ -57,7 +69,7 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
       setCodeError("Invite code is required");
       return;
     }
-    openModal(trimmed, "signup");
+    void validateAndOpenModal(trimmed, "signup");
   };
 
   const onOpenLogin = (e: FormEvent) => {
@@ -67,8 +79,10 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
       setCodeError("Invite code is required");
       return;
     }
-    openModal(trimmed, "login");
+    void validateAndOpenModal(trimmed, "login");
   };
+
+  const buttonsDisabled = isValidating;
 
   return (
     <>
@@ -95,9 +109,9 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
               setCode(sanitizeTripCodeInput(e.target.value));
               setCodeError(null);
             }}
-            placeholder="e.g. TRIP42 (6+ letters & numbers)"
+            placeholder="6-character code e.g. TRIP42"
             autoComplete="off"
-            minLength={6}
+            maxLength={6}
             className="w-full rounded-2xl border border-white/55 bg-white/70 px-4 py-3 text-sm text-slate-800 shadow-inner outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2"
           />
           {codeError && (
@@ -109,16 +123,34 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
             <button
               type="button"
               onClick={onOpenSignUp}
-              className="w-full rounded-2xl bg-atlas-teal px-4 py-3.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-atlas-teal-hover"
+              disabled={buttonsDisabled}
+              aria-busy={isValidating}
+              className="flex w-full items-center justify-center rounded-2xl bg-atlas-teal px-4 py-3.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-atlas-teal-hover disabled:opacity-70"
             >
-              Sign up
+              {isValidating ? (
+                <>
+                  <Loader2 className="size-5 animate-spin" aria-hidden />
+                  <span className="sr-only">Checking invite code</span>
+                </>
+              ) : (
+                "Sign up"
+              )}
             </button>
             <button
               type="button"
               onClick={onOpenLogin}
-              className="w-full rounded-2xl border border-atlas-teal/25 bg-white/70 px-4 py-3.5 text-sm font-semibold text-atlas-teal shadow-sm transition-colors hover:bg-white/90"
+              disabled={buttonsDisabled}
+              aria-busy={isValidating}
+              className="flex w-full items-center justify-center rounded-2xl border border-atlas-teal/25 bg-white/70 px-4 py-3.5 text-sm font-semibold text-atlas-teal shadow-sm transition-colors hover:bg-white/90 disabled:opacity-70"
             >
-              Log in
+              {isValidating ? (
+                <>
+                  <Loader2 className="size-5 animate-spin" aria-hidden />
+                  <span className="sr-only">Checking invite code</span>
+                </>
+              ) : (
+                "Log in"
+              )}
             </button>
           </div>
         </div>
