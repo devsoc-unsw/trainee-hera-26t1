@@ -6,6 +6,8 @@ import { UserPlus } from "lucide-react";
 import { JoinTripModal } from "@/components/join-trip-modal";
 import { sanitizeTripCodeInput, validateTripCode } from "@/lib/trip-code";
 
+type JoinMode = "signup" | "login";
+
 type LandingJoinCardProps = {
   cardClassName: string;
 };
@@ -16,6 +18,7 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeTripCode, setActiveTripCode] = useState("");
+  const [modalMode, setModalMode] = useState<JoinMode>("signup");
 
   useEffect(() => {
     const fromUrl = searchParams.get("code")?.trim() ?? "";
@@ -30,10 +33,11 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
 
     setCodeError(null);
     setActiveTripCode(fromUrl);
+    setModalMode("signup");
     setModalOpen(true);
   }, [searchParams]);
 
-  const openModal = (tripCode: string) => {
+  const openModal = (tripCode: string, mode: JoinMode) => {
     const validationError = validateTripCode(tripCode);
     if (validationError) {
       setCodeError(validationError);
@@ -42,17 +46,28 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
 
     setCodeError(null);
     setActiveTripCode(tripCode);
+    setModalMode(mode);
     setModalOpen(true);
   };
 
-  const onSubmit = (e: FormEvent) => {
+  const onOpenSignUp = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = code.trim();
     if (!trimmed) {
       setCodeError("Invite code is required");
       return;
     }
-    openModal(trimmed);
+    openModal(trimmed, "signup");
+  };
+
+  const onOpenLogin = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setCodeError("Invite code is required");
+      return;
+    }
+    openModal(trimmed, "login");
   };
 
   return (
@@ -65,10 +80,10 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
           Join an Existing Trip
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-[0.95rem]">
-          Got an invite code? Jump into the itinerary and see where the crew is
-          heading next.
+          Got an invite code? Sign up as a new member or log in if you&apos;ve
+          already joined.
         </p>
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
+        <div className="mt-6 flex flex-col gap-3">
           <label htmlFor="landing-invite-code" className="sr-only">
             Invite code
           </label>
@@ -90,18 +105,29 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
               {codeError}
             </p>
           )}
-          <button
-            type="submit"
-            className="w-full rounded-2xl bg-atlas-teal px-4 py-3.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-atlas-teal-hover disabled:opacity-70"
-          >
-            Join
-          </button>
-        </form>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onOpenSignUp}
+              className="w-full rounded-2xl bg-atlas-teal px-4 py-3.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-atlas-teal-hover"
+            >
+              Sign up
+            </button>
+            <button
+              type="button"
+              onClick={onOpenLogin}
+              className="w-full rounded-2xl border border-atlas-teal/25 bg-white/70 px-4 py-3.5 text-sm font-semibold text-atlas-teal shadow-sm transition-colors hover:bg-white/90"
+            >
+              Log in
+            </button>
+          </div>
+        </div>
       </article>
 
       <JoinTripModal
         open={modalOpen}
         tripCode={activeTripCode}
+        initialMode={modalMode}
         onClose={() => setModalOpen(false)}
       />
     </>

@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { hashPassword } from "@/lib/password";
+import {
+  participantPublicFields,
+  resolveTripId,
+} from "@/lib/resolve-trip";
 import { createClient } from "@/lib/supabase/server";
-import { validateTripCode } from "@/lib/trip-code";
 import type { TripParticipantInsert } from "@/types/database";
 
 type AddParticipantBody = {
@@ -32,47 +35,44 @@ export async function POST(req: NextRequest) {
     typeof body.trip_code === "string" ? body.trip_code.trim() : "";
 
   if (!username) {
-    return NextResponse.json({ error: "username is required" }, { status: 400 });
+    return NextResponse.json({ error: "Username is required" }, { status: 400 });
   }
 
   const password =
     typeof body.password === "string" ? body.password.trim() : "";
   const password_hash = password ? await hashPassword(password) : null;
 
-  if (!tripId && !tripCode) {
+  const supabase = await createClient();
+  const resolved = await resolveTripId(supabase, tripId, tripCode);
+  if ("error" in resolved) {
     return NextResponse.json(
-      { error: "trip_id or trip_code is required" },
-      { status: 400 },
+      { error: resolved.error },
+      { status: resolved.status },
     );
   }
 
-  if (!tripId && tripCode) {
-    const tripCodeError = validateTripCode(tripCode);
-    if (tripCodeError) {
-      return NextResponse.json({ error: tripCodeError }, { status: 400 });
-    }
-  }
+  const { data: existing } = await supabase
+    .from("trip_participants")
+    .select("username, password_hash")
+    .eq("username", username)
+    .eq("trip_id", resolved.tripId)
+    .maybeSingle();
 
-  const supabase = await createClient();
-
-  let resolvedTripId = tripId;
-  if (!resolvedTripId) {
-    const { data: trip, error: tripError } = await supabase
-      .from("trips")
-      .select("id")
-      .eq("trip_code", tripCode)
-      .single();
-
-    if (tripError || !trip) {
-      return NextResponse.json({ error: "Trip not found" }, { status: 404 });
-    }
-
-    resolvedTripId = trip.id;
+  if (existing) {
+    return NextResponse.json(
+      {
+        error:
+          "This username is already on this trip. Log in with your password instead.",
+        code: "username_exists",
+        has_password: Boolean(existing.password_hash),
+      },
+      { status: 409 },
+    );
   }
 
   const row: TripParticipantInsert = {
     username,
-    trip_id: resolvedTripId,
+    trip_id: resolved.tripId,
     password_hash,
     is_driver: body.is_driver === true,
     is_admin: body.is_admin === true,
@@ -90,9 +90,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from("trip_participants")
     .insert(row)
-    .select(
-      "username, trip_id, group_id, location, is_driver, is_admin, seats",
-    )
+    .select(participantPublicFields)
     .single();
 
   if (error) {
@@ -100,7 +98,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "This username is already on this trip.",
+            "This username is already on this trip. Log in with your password instead.",
+          code: "username_exists",
+          has_password: true,
         },
         { status: 409 },
       );
