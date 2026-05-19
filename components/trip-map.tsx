@@ -123,39 +123,62 @@ export function TripMap() {
     }
   }, [mapReady, participants]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    const container = mapContainerRef.current;
+    if (!mapReady || !map || !container) return;
+
+    const triggerResize = () => {
+      google.maps.event.trigger(map, "resize");
+    };
+
+    const observer = new ResizeObserver(triggerResize);
+    observer.observe(container);
+    triggerResize();
+
+    return () => observer.disconnect();
+  }, [mapReady]);
+
   if (!isGoogleMapsConfigured()) {
     return (
-      <div className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border border-dashed border-atlas-teal/30 bg-atlas-mist/30 p-8 text-center">
+      <div className="flex h-full w-full flex-col items-center justify-center bg-atlas-mist/30 p-8 text-center">
         <p className="text-sm font-medium text-atlas-teal">Map preview</p>
         <p className="mt-2 max-w-sm text-sm text-slate-600">
           Add{" "}
           <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs">
             NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
           </code>{" "}
-          to <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs">.env.local</code>{" "}
+          to{" "}
+          <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs">
+            .env.local
+          </code>{" "}
           to show the trip map and address search.
         </p>
       </div>
     );
   }
 
+  const pinCount = participants.filter((p) => p.location).length;
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="relative h-full w-full">
       <div
         ref={mapContainerRef}
-        className="min-h-[420px] w-full rounded-2xl border border-atlas-teal/15 bg-slate-100 shadow-inner"
+        className="absolute inset-0 h-full w-full"
         role="application"
         aria-label="Trip map"
       />
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p
+          className="absolute left-4 top-4 z-[1] max-w-xs rounded-xl bg-white/95 px-3 py-2 text-sm text-red-600 shadow-md"
+          role="alert"
+        >
           {error}
         </p>
       )}
       {!error && participants.length > 0 && (
-        <p className="text-xs text-slate-500">
-          {participants.filter((p) => p.location).length} of{" "}
-          {participants.length} members have set a pin
+        <p className="absolute bottom-4 left-4 z-[1] rounded-xl bg-white/90 px-3 py-1.5 text-xs text-slate-600 shadow-md">
+          {pinCount} of {participants.length} members have set a pin
         </p>
       )}
     </div>
