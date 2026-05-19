@@ -5,26 +5,24 @@ const TRIP_CODE_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const TRIP_CODE_DIGITS = "23456789";
 const TRIP_CODE_CHARS = TRIP_CODE_LETTERS + TRIP_CODE_DIGITS;
 
+const TRIP_CODE_LENGTH = 6;
+
 export function validateTripCode(code: string): string | null {
   const trimmed = code.trim();
 
-  if (trimmed.length < 6) {
-    return "Invite code must be at least 6 characters";
+  if (trimmed.length !== TRIP_CODE_LENGTH) {
+    return "Invite code must be exactly 6 letters or numbers";
   }
 
   if (!TRIP_CODE_PATTERN.test(trimmed)) {
     return "Invite code can only contain letters and numbers";
   }
 
-  if (!/[A-Za-z]/.test(trimmed) || !/\d/.test(trimmed)) {
-    return "Invite code must include at least one letter and one number";
-  }
-
   return null;
 }
 
 export function sanitizeTripCodeInput(value: string): string {
-  return value.replace(/[^A-Za-z0-9]/g, "");
+  return value.replace(/[^A-Za-z0-9]/g, "").slice(0, TRIP_CODE_LENGTH);
 }
 
 function shuffle<T>(items: T[]): T[] {
