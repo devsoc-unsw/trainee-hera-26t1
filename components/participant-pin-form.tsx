@@ -1,8 +1,10 @@
 "use client";
 
+import { MapPin } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { PlacesAutocompleteInput } from "@/components/places-autocomplete-input";
 import { readApiError } from "@/lib/api-error";
+import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
 import { isValidPin, type PinSelection } from "@/lib/pin";
 import { getTripSession } from "@/lib/trip-session";
 import type { TripParticipant } from "@/types/database";
@@ -10,13 +12,23 @@ import type { TripParticipant } from "@/types/database";
 const inputClassName =
   "w-full rounded-2xl border border-atlas-teal/20 bg-white px-4 py-3 text-sm text-slate-800 outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2";
 
+export type SavedParticipantLocation = {
+  id: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+};
+
 type ParticipantPinFormProps = {
   onSaved?: () => void;
 };
 
 export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
   const session = getTripSession();
+  const mapsConfigured = isGoogleMapsConfigured();
   const [participant, setParticipant] = useState<TripParticipant | null>(null);
+  const [savedLocation, setSavedLocation] =
+    useState<SavedParticipantLocation | null>(null);
   const [pin, setPin] = useState<PinSelection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,8 +55,12 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
         return;
       }
 
-      const json = (await res.json()) as { participant: TripParticipant };
+      const json = (await res.json()) as {
+        participant: TripParticipant;
+        location: SavedParticipantLocation | null;
+      };
       setParticipant(json.participant);
+      setSavedLocation(json.location ?? null);
     } catch {
       setError("Could not load your profile");
     } finally {
@@ -59,6 +75,7 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!session?.username || !session?.tripId) return;
+    if (!mapsConfigured) return;
     if (!isValidPin(pin)) {
       setError("Choose your address from the suggestions");
       return;
@@ -87,6 +104,12 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
 
       const json = (await res.json()) as { participant: TripParticipant };
       setParticipant(json.participant);
+      setSavedLocation({
+        id: json.participant.location ?? savedLocation?.id ?? "",
+        address: pin.address,
+        latitude: pin.latitude,
+        longitude: pin.longitude,
+      });
       setPin(null);
       onSaved?.();
     } catch {
@@ -100,44 +123,92 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
     return <p className="text-sm text-slate-500">Loading…</p>;
   }
 
-  if (participant?.location) {
-    return null;
+  if (!participant) {
+    return (
+      <p className="text-sm text-red-600" role="alert">
+        {error ?? "Could not load your profile"}
+      </p>
+    );
   }
 
+  const hasSavedLocation = Boolean(savedLocation?.address);
+
   return (
-    <form
-      onSubmit={onSubmit}
-      className="flex flex-col gap-3 rounded-2xl border border-atlas-teal/15 bg-atlas-mist/40 p-4"
-    >
+    <div className="flex flex-col gap-3">
       <div>
-        <h3 className="text-sm font-semibold text-atlas-teal">Set your pin</h3>
+        <h3 className="text-sm font-semibold text-atlas-teal">Your location</h3>
         <p className="mt-1 text-xs text-slate-600">
-          Search for your address so others can see you on the trip map.
+          {hasSavedLocation
+            ? "Your saved address on this trip."
+            : "Search for your address so others can see you on the trip map."}
         </p>
       </div>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-atlas-teal">Your location</span>
-        <PlacesAutocompleteInput
-          id="dashboard-pin-search"
-          value={pin}
-          onChange={setPin}
-          disabled={isSaving}
-          placeholder="Start typing your address…"
-          className={inputClassName}
-        />
-      </label>
-      {error && (
+
+      {hasSavedLocation && savedLocation && (
+        <div className="flex gap-3 rounded-2xl border border-atlas-teal/15 bg-atlas-mist/40 px-4 py-3">
+          <MapPin
+            className="mt-0.5 size-4 shrink-0 text-atlas-teal"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-atlas-teal">Saved address</p>
+            <p className="mt-0.5 text-sm text-slate-800">{savedLocation.address}</p>
+          </div>
+        </div>
+      )}
+
+      {!mapsConfigured && (
+        <p className="rounded-2xl border border-amber-200/80 bg-amber-50 px-3 py-2.5 text-sm text-amber-900" role="status">
+          {hasSavedLocation
+            ? "Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local to change your address."
+            : "Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local to set or change your address."}
+        </p>
+      )}
+
+      {mapsConfigured && (
+        <form onSubmit={onSubmit} className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-atlas-teal">
+              {hasSavedLocation ? "Update address" : "Your location"}
+            </span>
+            <PlacesAutocompleteInput
+              id="dashboard-pin-search"
+              value={pin}
+              onChange={setPin}
+              disabled={isSaving}
+              placeholder={
+                hasSavedLocation
+                  ? "Search for a new address…"
+                  : "Start typing your address…"
+              }
+              className={inputClassName}
+            />
+          </label>
+          {error && (
+            <p className="text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={isSaving || !isValidPin(pin)}
+            className="rounded-2xl bg-atlas-teal px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-atlas-teal-hover disabled:opacity-70"
+          >
+            {isSaving
+              ? "Saving…"
+              : hasSavedLocation
+                ? "Update pin"
+                : "Save pin"}
+          </button>
+        </form>
+      )}
+
+      {error && !mapsConfigured && (
         <p className="text-sm text-red-600" role="alert">
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={isSaving || !isValidPin(pin)}
-        className="rounded-2xl bg-atlas-teal px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-atlas-teal-hover disabled:opacity-70"
-      >
-        {isSaving ? "Saving…" : "Save pin"}
-      </button>
-    </form>
+    </div>
   );
 }
