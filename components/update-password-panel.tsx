@@ -56,7 +56,10 @@ export function UpdatePasswordPanel() {
       if (!res.ok) {
         setStatus({ type: "error", message: data.error ?? "Update failed." });
       } else {
-        setStatus({ type: "success", message: data.message ?? "Password updated." });
+        setStatus({
+          type: "success",
+          message: data.message ?? "Password updated.",
+        });
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
@@ -70,8 +73,10 @@ export function UpdatePasswordPanel() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div>
-        <h3 className="text-base font-semibold text-slate-800">Update Password</h3>
+      <motion.div>
+        <h3 className="text-base font-semibold text-slate-800">
+          Update Password
+        </h3>
         <p className="mt-0.5 text-xs text-slate-500">
           Leave &quot;Current password&quot; blank if you are setting a password
           for the first time.
@@ -80,7 +85,10 @@ export function UpdatePasswordPanel() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor="current-password" className="text-xs font-medium text-slate-600">
+          <label
+            htmlFor="current-password"
+            className="text-xs font-medium text-slate-600"
+          >
             Current password
           </label>
           <input
@@ -95,7 +103,10 @@ export function UpdatePasswordPanel() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="new-password" className="text-xs font-medium text-slate-600">
+          <label
+            htmlFor="new-password"
+            className="text-xs font-medium text-slate-600"
+          >
             New password
           </label>
           <input
@@ -111,7 +122,10 @@ export function UpdatePasswordPanel() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="confirm-password" className="text-xs font-medium text-slate-600">
+          <label
+            htmlFor="confirm-password"
+            className="text-xs font-medium text-slate-600"
+          >
             Confirm new password
           </label>
           <input
@@ -127,7 +141,11 @@ export function UpdatePasswordPanel() {
         </div>
 
         {status && (
-          <p className={`text-xs font-medium ${status.type === "success" ? "text-green-600" : "text-red-500"}`}>
+          <p
+            className={`text-xs font-medium ${
+              status.type === "success" ? "text-green-600" : "text-red-500"
+            }`}
+          >
             {status.message}
           </p>
         )}

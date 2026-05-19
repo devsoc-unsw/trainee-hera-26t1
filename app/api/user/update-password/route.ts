@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createClient();
 
-  // Fetch the participant to check their existing password hash.
   const { data: participant, error: fetchError } = await supabase
     .from("trip_participants")
     .select("username, trip_id, password_hash")
@@ -65,7 +64,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // If they already have a password, verify the current one before allowing a change.
   if (participant.password_hash) {
     if (!currentPassword) {
       return NextResponse.json(
@@ -73,7 +71,10 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const isMatch = await verifyPassword(currentPassword, participant.password_hash);
+    const isMatch = await verifyPassword(
+      currentPassword,
+      participant.password_hash,
+    );
     if (!isMatch) {
       return NextResponse.json(
         { error: "Current password is incorrect." },
