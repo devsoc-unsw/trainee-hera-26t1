@@ -3,10 +3,17 @@
 import { useState } from "react";
 import { DriverPassengerSwitch } from "@/components/driver-passenger-switch";
 import { LeaveTripPanel } from "@/components/leave-trip-panel";
-import { UpdatePasswordPanel } from "@/components/update-password-panel";
 import { ParticipantPinForm } from "@/components/participant-pin-form";
+import { UpdatePasswordPanel } from "@/components/update-password-panel";
 
-type View = "main" | "trip-info" | "members" | "group-info" | "admin" | "leave" | "account";
+type View =
+  | "main"
+  | "trip-info"
+  | "members"
+  | "group-info"
+  | "admin"
+  | "leave"
+  | "account";
 
 export const TripDashboardSidePanel = ({
   onPinSaved,
