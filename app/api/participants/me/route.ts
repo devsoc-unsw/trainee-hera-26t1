@@ -31,5 +31,37 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Participant not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ participant: data });
+  let locationData: {
+    id: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+  } | null = null;
+
+  if (typeof data.location === "string" && data.location.length > 0) {
+    const { data: location, error: locationError } = await supabase
+      .from("locations")
+      .select("id, address, latitude, longitude")
+      .eq("id", data.location)
+      .maybeSingle();
+
+    if (locationError) {
+      return NextResponse.json({ error: locationError.message }, { status: 500 });
+    }
+
+    if (
+      location?.address &&
+      typeof location.latitude === "number" &&
+      typeof location.longitude === "number"
+    ) {
+      locationData = {
+        id: location.id,
+        address: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+    }
+  }
+
+  return NextResponse.json({ participant: data, location: locationData });
 }
