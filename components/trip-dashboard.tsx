@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { DriverPassengerSwitch } from "@/components/driver-passenger-switch";
+import { LeaveTripPanel } from "@/components/leave-trip-panel";
+
+type View = "main" | "trip-info" | "members" | "group-info" | "admin" | "leave";
 
 export const TripDashboardSidePanel = () => {
-  const [activeView, setActiveView] = useState<
-    "main" | "trip-info" | "members" | "group-info" | "admin"
-  >("main");
+  const [activeView, setActiveView] = useState<View>("main");
 
   return (
     <div>
@@ -16,6 +17,7 @@ export const TripDashboardSidePanel = () => {
         <button onClick={() => setActiveView("members")}>All Members</button>
         <button onClick={() => setActiveView("group-info")}>Group Info</button>
         <button onClick={() => setActiveView("admin")}>Admin Features</button>
+        <button onClick={() => setActiveView("leave")}>Leave Trip</button>
       </div>
 
       <div>
@@ -24,6 +26,7 @@ export const TripDashboardSidePanel = () => {
         {activeView === "members" && <MembersView />}
         {activeView === "group-info" && <GroupInfoView />}
         {activeView === "admin" && <AdminView />}
+        {activeView === "leave" && <LeaveTripPanel />}
       </div>
     </div>
   );
