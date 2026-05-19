@@ -4,10 +4,15 @@ import { useState } from "react";
 import { DriverPassengerSwitch } from "@/components/driver-passenger-switch";
 import { LeaveTripPanel } from "@/components/leave-trip-panel";
 import { UpdatePasswordPanel } from "@/components/update-password-panel";
+import { ParticipantPinForm } from "@/components/participant-pin-form";
 
 type View = "main" | "trip-info" | "members" | "group-info" | "admin" | "leave" | "account";
 
-export const TripDashboardSidePanel = () => {
+export const TripDashboardSidePanel = ({
+  onPinSaved,
+}: {
+  onPinSaved?: () => void;
+}) => {
   const [activeView, setActiveView] = useState<View>("main");
 
   return (
@@ -23,7 +28,7 @@ export const TripDashboardSidePanel = () => {
       </div>
 
       <div>
-        {activeView === "main" && <MainView />}
+        {activeView === "main" && <MainView onPinSaved={onPinSaved} />}
         {activeView === "trip-info" && <TripInfoView />}
         {activeView === "members" && <MembersView />}
         {activeView === "group-info" && <GroupInfoView />}
@@ -35,9 +40,10 @@ export const TripDashboardSidePanel = () => {
   );
 };
 
-const MainView = () => {
+const MainView = ({ onPinSaved }: { onPinSaved?: () => void }) => {
   return (
     <div className="flex flex-col gap-4">
+      <ParticipantPinForm onSaved={onPinSaved} />
       <DriverPassengerSwitch />
     </div>
   );

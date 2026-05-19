@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
+import { PlacesAutocompleteInput } from "@/components/places-autocomplete-input";
 import { readApiError } from "@/lib/api-error";
+import { isValidPin, type PinSelection } from "@/lib/pin";
 import { setTripSession } from "@/lib/trip-session";
 import type { TripParticipant } from "@/types/database";
 
@@ -38,6 +40,7 @@ export function JoinTripModal({
   const [mode, setMode] = useState<JoinMode>(initialMode);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [pin, setPin] = useState<PinSelection | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -64,6 +67,7 @@ export function JoinTripModal({
       setMode(initialMode);
       setUsername("");
       setPassword("");
+      setPin(null);
       setError(null);
       setInfo(null);
       setShowLoginPrompt(false);
@@ -79,6 +83,7 @@ export function JoinTripModal({
 
   const switchMode = (next: JoinMode) => {
     setMode(next);
+    setPin(null);
     setError(null);
     setInfo(null);
     setShowLoginPrompt(false);
@@ -108,6 +113,13 @@ export function JoinTripModal({
         body: JSON.stringify({
           username: username.trim(),
           trip_code: tripCode,
+          ...(isValidPin(pin)
+            ? {
+                address: pin.address,
+                latitude: pin.latitude,
+                longitude: pin.longitude,
+              }
+            : {}),
           ...(password.trim() ? { password } : {}),
         }),
       });
@@ -257,6 +269,26 @@ export function JoinTripModal({
               autoFocus
             />
           </label>
+
+          {isSignUp && (
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-atlas-teal">
+                Your location
+              </span>
+              <PlacesAutocompleteInput
+                id="join-trip-pin"
+                value={pin}
+                onChange={(next) => {
+                  setPin(next);
+                  setError(null);
+                  setInfo(null);
+                }}
+                disabled={isSubmitting}
+                placeholder="Search for your address…"
+                className={inputClassName}
+              />
+            </label>
+          )}
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-atlas-teal">

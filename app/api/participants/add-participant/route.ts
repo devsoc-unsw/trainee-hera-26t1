@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createLocationRow } from "@/lib/create-location";
 import { hashPassword } from "@/lib/password";
 import {
   participantPublicFields,
@@ -16,7 +17,9 @@ type AddParticipantBody = {
   is_admin?: boolean;
   seats?: number;
   group_id?: string;
-  location?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 export async function POST(req: NextRequest) {
@@ -70,6 +73,43 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const address =
+    typeof body.address === "string" ? body.address.trim() : "";
+  const latitude = body.latitude;
+  const longitude = body.longitude;
+  const hasPinFields =
+    address.length > 0 ||
+    typeof latitude === "number" ||
+    typeof longitude === "number";
+
+  let locationId: string | null = null;
+
+  if (hasPinFields) {
+    if (
+      !address ||
+      typeof latitude !== "number" ||
+      typeof longitude !== "number"
+    ) {
+      return NextResponse.json(
+        { error: "Pick a valid address from the suggestions" },
+        { status: 400 },
+      );
+    }
+
+    const createdLocation = await createLocationRow(supabase, {
+      address,
+      latitude,
+      longitude,
+      name: username,
+    });
+
+    if ("error" in createdLocation) {
+      return NextResponse.json({ error: createdLocation.error }, { status: 500 });
+    }
+
+    locationId = createdLocation.locationId;
+  }
+
   const row: TripParticipantInsert = {
     username,
     trip_id: resolved.tripId,
@@ -80,10 +120,7 @@ export async function POST(req: NextRequest) {
       typeof body.group_id === "string" && body.group_id.trim()
         ? body.group_id.trim()
         : null,
-    location:
-      typeof body.location === "string" && body.location.trim()
-        ? body.location.trim()
-        : null,
+    location: locationId,
     seats: typeof body.seats === "number" ? body.seats : null,
   };
 
