@@ -73,7 +73,7 @@ export function UpdatePasswordPanel() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <motion.div>
+      <div>
         <h3 className="text-base font-semibold text-slate-800">
           Update Password
         </h3>
