@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { readApiError } from "@/lib/api-error";
-import { getTripSession } from "@/lib/trip-session";
+import { getTripSession, type TripSession } from "@/lib/trip-session";
 import type { Trip, TripParticipant } from "@/types/database";
 
 export type TripSummary = Pick<
@@ -12,12 +12,18 @@ export type TripSummary = Pick<
 >;
 
 export function useTripDashboardData() {
-  const session = getTripSession();
+  // Read the trip session AFTER mount so server and first client render match
+  // (avoids a hydration mismatch — localStorage is unavailable on the server).
+  const [session, setSession] = useState<TripSession | null>(null);
   const [trip, setTrip] = useState<TripSummary | null>(null);
   const [me, setMe] = useState<TripParticipant | null>(null);
   const [members, setMembers] = useState<TripMapParticipant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSession(getTripSession());
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!session?.tripId || !session.username) {

@@ -77,7 +77,7 @@ export function UpdatePasswordPanel() {
         <h3 className="text-base font-semibold text-slate-800">
           Update Password
         </h3>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">
           Leave &quot;Current password&quot; blank if you are setting a password
           for the first time.
         </p>

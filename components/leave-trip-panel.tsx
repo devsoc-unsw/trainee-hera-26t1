@@ -70,7 +70,7 @@ export function LeaveTripPanel() {
     <div className="flex flex-col gap-4 p-4">
       <div>
         <h3 className="text-base font-semibold text-slate-800">Leave Trip</h3>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">
           You will be removed from this trip and all driving group assignments.
           This cannot be undone.
         </p>

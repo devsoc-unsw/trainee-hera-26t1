@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 
 const navButtonBase =
-  "flex w-full items-center gap-2.5 rounded-2xl px-4 py-3.5 text-left text-sm font-semibold transition-colors";
+  "flex w-full items-center justify-center gap-2.5 rounded-2xl px-4 py-3.5 text-center text-sm font-semibold transition-colors";
 
 export function DashboardNavTab({
   active,
@@ -24,7 +24,7 @@ export function DashboardNavTab({
           : "border border-atlas-teal/20 bg-white/60 text-atlas-teal shadow-sm hover:bg-white/90"
       }`}
     >
-      <Icon className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
+      <Icon className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
       {label}
     </button>
   );
@@ -38,12 +38,12 @@ export function DashboardSectionHeading({
   description?: string;
 }) {
   return (
-    <div className="mb-4">
-      <h3 className="text-sm font-semibold tracking-tight text-atlas-teal">
+    <div className="mb-5">
+      <h3 className="text-lg font-semibold tracking-tight text-atlas-teal">
         {title}
       </h3>
       {description && (
-        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
           {description}
         </p>
       )}
@@ -64,7 +64,7 @@ export function DashboardFilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
         active
           ? "bg-atlas-teal text-white shadow-sm"
           : "border border-atlas-teal/20 bg-white/80 text-atlas-teal hover:bg-white"

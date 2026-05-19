@@ -50,7 +50,7 @@ export function MembersPanel({
           onClick={() => onRoleFilterChange("drivers")}
         >
           <span className="inline-flex items-center gap-1">
-            <Car className="size-3" aria-hidden />
+            <Car className="size-3.5" aria-hidden />
             Drivers ({driverCount})
           </span>
         </DashboardFilterChip>
