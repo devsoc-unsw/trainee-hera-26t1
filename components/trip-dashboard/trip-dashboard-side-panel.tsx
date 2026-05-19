@@ -21,7 +21,7 @@ export function TripDashboardSidePanel({
 }: {
   onPinSaved?: () => void;
 }) {
-  const { session, trip, me, members, isLoading, error } =
+  const { session, trip, me, members, isLoading, error, refresh } =
     useTripDashboardData();
   const [activeTab, setActiveTab] = useState<SidebarTab>("trip-info");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
@@ -88,8 +88,10 @@ export function TripDashboardSidePanel({
         {activeTab === "trip-info" && (
           <TripInfoPanel
             trip={trip}
+            me={me}
             isLoading={isLoading}
             memberCount={members.length}
+            onMemberAdded={refresh}
           />
         )}
         {activeTab === "personal" && (

@@ -1,11 +1,13 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 import { JoinTripModal } from "@/components/join-trip-modal";
 import { readApiError } from "@/lib/api-error";
 import { sanitizeTripCodeInput, validateTripCode } from "@/lib/trip-code";
+import { setTripSession } from "@/lib/trip-session";
+import type { TripParticipant } from "@/types/database";
 
 type JoinMode = "signup" | "login";
 
@@ -14,10 +16,12 @@ type LandingJoinCardProps = {
 };
 
 export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [isAutoJoining, setIsAutoJoining] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeTripCode, setActiveTripCode] = useState("");
   const [modalMode, setModalMode] = useState<JoinMode>("signup");
@@ -54,13 +58,54 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
     [],
   );
 
-  useEffect(() => {
-    const fromUrl = searchParams.get("code")?.trim() ?? "";
-    if (!fromUrl) return;
+  // Auto-join flow: when the URL contains both ?code and ?username (e.g. from
+  // an admin invite link), log the user in directly and skip the modal.
+  const autoJoin = useCallback(
+    async (tripCode: string, username: string) => {
+      setIsAutoJoining(true);
+      setCodeError(null);
 
-    setCode(fromUrl);
-    void validateAndOpenModal(fromUrl, "signup");
-  }, [searchParams, validateAndOpenModal]);
+      try {
+        const res = await fetch("/api/participants/login-participant", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ trip_code: tripCode, username }),
+        });
+
+        if (!res.ok) {
+          setCodeError(await readApiError(res, "Could not accept this invite"));
+          return;
+        }
+
+        const json = (await res.json()) as { participant: TripParticipant };
+        setTripSession({
+          username: json.participant.username,
+          tripId: json.participant.trip_id,
+          tripCode,
+        });
+        router.replace("/dashboard");
+      } catch {
+        setCodeError("Could not reach the server. Try refreshing the page.");
+      } finally {
+        setIsAutoJoining(false);
+      }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    const codeFromUrl = searchParams.get("code")?.trim() ?? "";
+    if (!codeFromUrl) return;
+
+    setCode(codeFromUrl);
+
+    const usernameFromUrl = searchParams.get("username")?.trim() ?? "";
+    if (usernameFromUrl) {
+      void autoJoin(codeFromUrl, usernameFromUrl);
+    } else {
+      void validateAndOpenModal(codeFromUrl, "signup");
+    }
+  }, [searchParams, validateAndOpenModal, autoJoin]);
 
   const onOpenSignUp = (e: FormEvent) => {
     e.preventDefault();
@@ -82,7 +127,7 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
     void validateAndOpenModal(trimmed, "login");
   };
 
-  const buttonsDisabled = isValidating;
+  const buttonsDisabled = isValidating || isAutoJoining;
 
   return (
     <>
@@ -97,6 +142,16 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
           Got an invite code? Sign up as a new member or log in if you&apos;ve
           already joined.
         </p>
+        {isAutoJoining && (
+          <div
+            className="mt-4 flex items-center gap-2 rounded-2xl border border-atlas-teal/20 bg-white/70 px-4 py-3 text-sm font-medium text-atlas-teal"
+            role="status"
+            aria-live="polite"
+          >
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            Accepting your invite…
+          </div>
+        )}
         <div className="mt-6 flex flex-col gap-3">
           <label htmlFor="landing-invite-code" className="sr-only">
             Invite code
@@ -112,7 +167,8 @@ export function LandingJoinCard({ cardClassName }: LandingJoinCardProps) {
             placeholder="6-character code e.g. TRIP42"
             autoComplete="off"
             maxLength={6}
-            className="w-full rounded-2xl border border-white/55 bg-white/70 px-4 py-3 text-sm text-slate-800 shadow-inner outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2"
+            disabled={isAutoJoining}
+            className="w-full rounded-2xl border border-white/55 bg-white/70 px-4 py-3 text-sm text-slate-800 shadow-inner outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2 disabled:opacity-60"
           />
           {codeError && (
             <p className="text-sm text-red-600" role="alert">
