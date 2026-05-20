@@ -8,7 +8,11 @@ import type {
 import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
 import { loadGoogleMaps } from "@/hooks/use-google-maps";
 import { readApiError } from "@/lib/api-error";
-import { createMapPinIcon } from "@/lib/map-pin-icon";
+import {
+  createDestinationPinIcon,
+  createMapPinIcon,
+  DESTINATION_PIN_COLOR,
+} from "@/lib/map-pin-icon";
 import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
 import { getTripSession } from "@/lib/trip-session";
 
@@ -19,18 +23,24 @@ const ATLAS_TEAL = "#0c3d3f";
 const MEMBER_PIN_Z = 200;
 const FOCUSED_PIN_Z = 500;
 const DESTINATION_PIN_Z = 1000;
+const FOCUSED_DESTINATION_PIN_Z = 1100;
 
 type TripMapProps = {
   focusUsername?: string | null;
-  /** Increment to refetch pins (e.g. after forming driving groups). */
+  focusDestination?: boolean;
   refreshKey?: number;
 };
 
-export function TripMap({ focusUsername, refreshKey = 0 }: TripMapProps) {
+export function TripMap({
+  focusUsername,
+  focusDestination = false,
+  refreshKey = 0,
+}: TripMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const memberMarkersRef = useRef<Map<string, google.maps.Marker>>(new Map());
+  const destinationMarkerRef = useRef<google.maps.Marker | null>(null);
   const [participants, setParticipants] = useState<TripMapParticipant[]>([]);
   const [destination, setDestination] = useState<TripMapLocation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +122,7 @@ export function TripMap({ focusUsername, refreshKey = 0 }: TripMapProps) {
     }
     markersRef.current = [];
     memberMarkersRef.current.clear();
+    destinationMarkerRef.current = null;
 
     const bounds = new google.maps.LatLngBounds();
     let pointCount = 0;
@@ -126,8 +137,9 @@ export function TripMap({ focusUsername, refreshKey = 0 }: TripMapProps) {
         position,
         title: destination.address ?? "Trip destination",
         zIndex: DESTINATION_PIN_Z,
-        icon: createMapPinIcon(ATLAS_TEAL, "D"),
+        icon: createDestinationPinIcon(),
       });
+      destinationMarkerRef.current = destinationMarker;
       markersRef.current.push(destinationMarker);
       bounds.extend(position);
       pointCount += 1;
@@ -186,6 +198,9 @@ export function TripMap({ focusUsername, refreshKey = 0 }: TripMapProps) {
       map.setZoom(FOCUS_ZOOM);
     }
 
+    destinationMarkerRef.current?.setZIndex(DESTINATION_PIN_Z);
+    destinationMarkerRef.current?.setAnimation(null);
+
     for (const [username, marker] of memberMarkersRef.current) {
       marker.setZIndex(
         username === focusUsername ? FOCUSED_PIN_Z : MEMBER_PIN_Z,
@@ -202,6 +217,39 @@ export function TripMap({ focusUsername, refreshKey = 0 }: TripMapProps) {
       return () => window.clearTimeout(stopBounce);
     }
   }, [focusUsername, mapReady, participants]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map || !focusDestination || !hasMapCoords(destination)) {
+      return;
+    }
+
+    const position = {
+      lat: destination.latitude,
+      lng: destination.longitude,
+    };
+
+    map.panTo(position);
+    const zoom = map.getZoom();
+    if (zoom == null || zoom < FOCUS_ZOOM) {
+      map.setZoom(FOCUS_ZOOM);
+    }
+
+    for (const marker of memberMarkersRef.current.values()) {
+      marker.setZIndex(MEMBER_PIN_Z);
+      marker.setAnimation(null);
+    }
+
+    const destMarker = destinationMarkerRef.current;
+    if (destMarker) {
+      destMarker.setZIndex(FOCUSED_DESTINATION_PIN_Z);
+      destMarker.setAnimation(google.maps.Animation.BOUNCE);
+      const stopBounce = window.setTimeout(() => {
+        destMarker.setAnimation(null);
+      }, 1400);
+      return () => window.clearTimeout(stopBounce);
+    }
+  }, [focusDestination, mapReady, destination]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -262,11 +310,11 @@ export function TripMap({ focusUsername, refreshKey = 0 }: TripMapProps) {
           {hasDestinationPin && (
             <span className="flex items-center gap-1.5">
               <span
-                className="inline-flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                style={{ backgroundColor: ATLAS_TEAL }}
+                className="inline-flex size-4 items-center justify-center text-sm leading-none"
+                style={{ color: DESTINATION_PIN_COLOR }}
                 aria-hidden
               >
-                D
+                ★
               </span>
               Trip destination
             </span>

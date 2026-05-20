@@ -2,6 +2,7 @@ import { MapPin } from "lucide-react";
 import { AdminUpdateDestination } from "@/components/trip-dashboard/admin-update-destination";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { DashboardSectionHeading } from "@/components/trip-dashboard/dashboard-ui";
+import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
 import type { TripSummary } from "@/components/trip-dashboard/use-trip-dashboard-data";
 import type { TripParticipant } from "@/types/database";
 
@@ -11,6 +12,7 @@ type TripInfoPanelProps = {
   isLoading: boolean;
   memberCount: number;
   onTripUpdated?: () => void;
+  onDestinationFocus?: () => void;
 };
 
 export function TripInfoPanel({
@@ -19,7 +21,13 @@ export function TripInfoPanel({
   isLoading,
   memberCount,
   onTripUpdated,
+  onDestinationFocus,
 }: TripInfoPanelProps) {
+  const destinationAddress = trip?.destination?.address?.trim();
+  const canShowDestinationOnMap =
+    !!destinationAddress &&
+    hasMapCoords(trip?.destination) &&
+    !!onDestinationFocus;
   // Only show the loading state on the FIRST load (when we don't have trip
   // data yet). Once we've loaded once, subsequent refreshes shouldn't unmount
   // the admin panel below — that would wipe its form state.
@@ -49,7 +57,18 @@ export function TripInfoPanel({
                 Destination
               </dt>
               <dd className="font-medium text-slate-800">
-                {trip?.destination?.address?.trim() || "Not set"}
+                {canShowDestinationOnMap ? (
+                  <button
+                    type="button"
+                    onClick={onDestinationFocus}
+                    className="text-left text-atlas-teal underline decoration-atlas-teal/30 underline-offset-2 transition-colors hover:text-atlas-teal-hover hover:decoration-atlas-teal/60"
+                    aria-label={`Show destination on map: ${destinationAddress}`}
+                  >
+                    {destinationAddress}
+                  </button>
+                ) : (
+                  destinationAddress || "Not set"
+                )}
               </dd>
             </div>
           </div>
