@@ -2,9 +2,15 @@
 
 import { useState, type FormEvent } from "react";
 import { Check, Copy, UserPlus } from "lucide-react";
+import { PlacesAutocompleteInput } from "@/components/places-autocomplete-input";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { readApiError } from "@/lib/api-error";
+import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
+import { isValidPin, type PinSelection } from "@/lib/pin";
 import { cn } from "@/lib/utils";
+
+const inputClassName =
+  "rounded-2xl border border-atlas-teal/20 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2";
 
 type AdminAddUserProps = {
   tripId: string;
@@ -23,7 +29,9 @@ export function AdminAddUser({
   tripCode,
   onAdded,
 }: AdminAddUserProps) {
+  const mapsConfigured = isGoogleMapsConfigured();
   const [username, setUsername] = useState("");
+  const [pin, setPin] = useState<PinSelection | null>(null);
   const [isDriver, setIsDriver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +58,13 @@ export function AdminAddUser({
           username: trimmed,
           trip_id: tripId,
           is_driver: isDriver,
+          ...(isValidPin(pin)
+            ? {
+                address: pin.address,
+                latitude: pin.latitude,
+                longitude: pin.longitude,
+              }
+            : {}),
         }),
       });
 
@@ -65,6 +80,7 @@ export function AdminAddUser({
       setInviteUrl(url.toString());
       setInvitedUsername(trimmed);
       setUsername("");
+      setPin(null);
       setIsDriver(false);
       onAdded?.();
     } catch {
@@ -94,8 +110,9 @@ export function AdminAddUser({
           Invite a member
         </h3>
         <p className="mt-1 text-sm leading-relaxed text-slate-600">
-          Add someone by username. You&apos;ll get an invite link to share with
-          them, and opening it signs them into this trip automatically.
+          Add someone by username. Optionally set their map pin now. You&apos;ll
+          get an invite link to share — opening it signs them into this trip
+          automatically.
         </p>
       </div>
 
@@ -114,6 +131,26 @@ export function AdminAddUser({
             autoComplete="off"
             required
           />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-atlas-teal">
+            Address <span className="font-normal text-slate-500">(optional)</span>
+          </span>
+          {mapsConfigured ? (
+            <PlacesAutocompleteInput
+              id="admin-add-member-address"
+              value={pin}
+              onChange={setPin}
+              disabled={isSubmitting}
+              placeholder="Start typing their address…"
+              className={inputClassName}
+            />
+          ) : (
+            <p className="text-xs text-amber-900">
+              Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to set an address when inviting.
+            </p>
+          )}
         </label>
 
         <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
