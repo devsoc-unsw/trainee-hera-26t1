@@ -12,6 +12,7 @@ export type TripMapParticipant = {
   username: string;
   is_driver: boolean;
   is_admin: boolean;
+  seats: number | null;
   group_id: string | null;
   group_color: string | null;
   location: TripMapLocation | null;
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
     await Promise.all([
       supabase
         .from("trip_participants")
-        .select("username, is_driver, is_admin, location, group_id")
+        .select("username, is_driver, is_admin, seats, location, group_id")
         .eq("trip_id", trip_id),
       supabase
         .from("driving_groups")
@@ -114,6 +115,7 @@ export async function GET(req: NextRequest) {
       username: p.username,
       is_driver: p.is_driver,
       is_admin: p.is_admin,
+      seats: typeof p.seats === "number" ? p.seats : null,
       group_id: groupId,
       group_color: groupId ? (groupColorById[groupId] ?? null) : null,
       location: toMapLocation(p.location),

@@ -45,7 +45,9 @@ export function MemberRow({ member, isFocused, onFocus }: MemberRowProps) {
         <p className="truncate font-medium text-slate-800">{member.username}</p>
         <p className="text-xs text-slate-500">
           {member.is_admin && "Admin · "}
-          {member.is_driver ? "Driver" : "Passenger"}
+          {member.is_driver
+            ? `Driver${typeof member.seats === "number" ? ` · ${member.seats} seat${member.seats === 1 ? "" : "s"}` : ""}`
+            : "Passenger"}
           {hasPin ? " · Pin set" : " · No pin yet"}
         </p>
       </div>
