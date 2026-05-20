@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { DashboardSectionHeading } from "@/components/trip-dashboard/dashboard-ui";
+import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
+import type { TripSummary } from "@/components/trip-dashboard/use-trip-dashboard-data";
 import { Button } from "@/components/ui/button";
 import { getTripSession } from "@/lib/trip-session";
 
@@ -44,8 +46,9 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
 
     const { username, tripId } = session;
 
-    // Check participant role
-    fetch(`/api/participants/me?username=${encodeURIComponent(username)}&trip_id=${encodeURIComponent(tripId)}`)
+    fetch(
+      `/api/participants/me?username=${encodeURIComponent(username)}&trip_id=${encodeURIComponent(tripId)}`,
+    )
       .then((r) => r.json())
       .then((data) => {
         if (data?.participant?.is_admin) setIsAdmin(true);
@@ -54,13 +57,14 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
         // ignore
       });
 
-    // Fetch initial groups
     fetchGroups(tripId);
   }, []);
 
   async function fetchGroups(tripId: string) {
     try {
-      const res = await fetch(`/api/trips/${encodeURIComponent(tripId)}/driving-groups`);
+      const res = await fetch(
+        `/api/trips/${encodeURIComponent(tripId)}/driving-groups`,
+      );
       const data = await res.json();
       if (res.ok) {
         setGroups(data.groups || []);
@@ -84,10 +88,32 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
     const tripId = session.tripId;
 
     try {
-      // 1) Fetch participants with locations for this trip
-      const pRes = await fetch(`/api/trips/${encodeURIComponent(tripId)}/participants`);
+      const tripParams = new URLSearchParams({ trip_id: tripId });
+      const tripRes = await fetch(`/api/trips/by-id?${tripParams}`);
+      const tripJson = (await tripRes.json()) as {
+        trip?: TripSummary;
+        error?: string;
+      };
+      if (!tripRes.ok) {
+        throw new Error(tripJson.error || "Failed to fetch trip");
+      }
+
+      const destination = tripJson.trip?.destination ?? null;
+      if (!hasMapCoords(destination)) {
+        setMessage(
+          "Can't form groups — set a trip destination first (Trip info tab).",
+        );
+        setLoading(false);
+        return;
+      }
+
+      const pRes = await fetch(
+        `/api/trips/${encodeURIComponent(tripId)}/participants`,
+      );
       const pData = await pRes.json();
-      if (!pRes.ok) throw new Error(pData.error || "Failed to fetch participants");
+      if (!pRes.ok) {
+        throw new Error(pData.error || "Failed to fetch participants");
+      }
 
       const participants: ParticipantLocation[] = pData.participants || [];
       if (!participants.length) {
@@ -96,7 +122,6 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
         return;
       }
 
-      // 2) Build solver payload
       const locations = participants.map((p) => ({
         id: p.id,
         is_driver: !!p.is_driver,
@@ -105,25 +130,31 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
         longitude: p.longitude,
       }));
 
-      // 3) Call solver via app route
       const solveRes = await fetch("/api/solve-roadtrip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locations }),
+        body: JSON.stringify({
+          locations,
+          destination: {
+            latitude: destination.latitude,
+            longitude: destination.longitude,
+          },
+        }),
       });
       const solveData = await solveRes.json();
       if (!solveRes.ok) throw new Error(solveData.error || "Solver error");
 
       const routes: string[][] = solveData.routes;
 
-      // 4) Save groups to DB
       const saveRes = await fetch(`/api/driving-groups/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trip_id: tripId, routes }),
       });
       const saveData = await saveRes.json();
-      if (!saveRes.ok) throw new Error(saveData.error || "Failed to save groups");
+      if (!saveRes.ok) {
+        throw new Error(saveData.error || "Failed to save groups");
+      }
 
       setMessage(`Success: created ${saveData.groups_created} groups`);
 
@@ -140,26 +171,31 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
     <div className={dashboardSectionClass}>
       <DashboardSectionHeading title="Driving groups" />
       {isAdmin && (
-        <div className="mb-3 flex items-center gap-3">
-          <Button onClick={handleFormGroups} disabled={loading}>
-            {loading ? "Forming…" : "Form groups"}
-          </Button>
-          {message && (
-            <p
-              className={`text-xs ${
-                message.startsWith("Success:")
-                  ? "text-emerald-600"
-                  : "text-rose-600"
-              }`}
-            >
-              {message.startsWith("Success:") ? "success" : `error: ${message}`}
-            </p>
-          )}
+        <div className="mb-3 flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <Button onClick={handleFormGroups} disabled={loading}>
+              {loading ? "Forming…" : "Form groups"}
+            </Button>
+            {message && (
+              <p
+                className={`text-xs ${
+                  message.startsWith("Success:")
+                    ? "text-emerald-600"
+                    : "text-rose-600"
+                }`}
+              >
+                {message.startsWith("Success:") ? "success" : `error: ${message}`}
+              </p>
+            )}
+          </div>
+          <p className="text-xs text-slate-500">
+            Requires a trip destination. Routes are optimized toward that
+            location.
+          </p>
         </div>
       )}
 
       <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-
         {groups.length > 0 ? (
           <div className="space-y-2">
             {groups.map((group) => (
@@ -180,7 +216,8 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
                 <ol className="mt-1 space-y-1 text-sm text-slate-600">
                   {group.driver && (
                     <li>
-                      1. {group.driver.username} <span className="text-slate-400">(driver)</span>
+                      1. {group.driver.username}{" "}
+                      <span className="text-slate-400">(driver)</span>
                     </li>
                   )}
                   {group.passengers.map((p, index) => (

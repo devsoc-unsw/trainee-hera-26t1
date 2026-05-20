@@ -20,11 +20,13 @@ export function TripDashboardSidePanel({
   onDataChange,
   focusUsername,
   onMemberFocus,
+  onDestinationFocus,
 }: {
   /** Bumps map + refetches sidebar trip data (members, groups, etc.). */
   onDataChange?: () => void;
   focusUsername?: string | null;
   onMemberFocus?: (username: string) => void;
+  onDestinationFocus?: () => void;
 }) {
   const { session, trip, me, members, isLoading, error, refresh } =
     useTripDashboardData();
@@ -102,6 +104,7 @@ export function TripDashboardSidePanel({
             isLoading={isLoading}
             memberCount={members.length}
             onTripUpdated={invalidateTripData}
+            onDestinationFocus={onDestinationFocus}
           />
         )}
         {activeTab === "personal" && (
