@@ -92,7 +92,6 @@ export function TripDashboardSidePanel({
             members={members}
             isLoading={isLoading}
             memberCount={members.length}
-            onMemberAdded={refresh}
             onMemberRemoved={refresh}
           />
         )}
@@ -108,6 +107,10 @@ export function TripDashboardSidePanel({
             driverCount={driverCount}
             passengerCount={passengerCount}
             totalCount={members.length}
+            isAdmin={me?.is_admin ?? false}
+            tripId={trip?.id}
+            tripCode={trip?.trip_code ?? undefined}
+            onMemberAdded={refresh}
           />
         )}
         {activeTab === "groups" && <DrivingGroupsPanel />}
