@@ -72,7 +72,7 @@ const TripDashboardPage = () => {
           />
         )}
       </div>
-      <aside className="absolute bottom-0 right-0 top-[4.25rem] z-10 flex w-full max-w-md flex-col border-l border-atlas-teal/10 bg-white/30 p-3 shadow-[-8px_0_32px_-12px_rgba(12,61,63,0.15)] backdrop-blur-md sm:top-[4.5rem] sm:w-[22rem] sm:p-4">
+      <aside className="absolute bottom-0 right-0 top-[4.25rem] z-10 flex w-full max-w-[28rem] flex-col border-l border-atlas-teal/10 bg-white/30 p-3 shadow-[-8px_0_32px_-12px_rgba(12,61,63,0.15)] backdrop-blur-md sm:top-[4.5rem] sm:w-[26rem] sm:p-4">
         <TripDashboardSidePanel
           session={session}
           trip={trip}

@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
+import { MemberGroupAssign } from "@/components/trip-dashboard/member-group-assign";
 import { PlacesAutocompleteInput } from "@/components/places-autocomplete-input";
 import { readApiError } from "@/lib/api-error";
 import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
@@ -136,6 +137,19 @@ export function MemberDetailPopup({
           </dd>
         </div>
       </dl>
+
+      {isAdmin && !member.is_driver && (
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          <p className="mb-2 text-xs font-medium text-atlas-teal">
+            Change driving group (admin)
+          </p>
+          <MemberGroupAssign
+            member={member}
+            tripId={tripId}
+            onUpdated={onUpdated}
+          />
+        </div>
+      )}
 
       {isAdmin && (
         <div className="mt-4 border-t border-slate-200 pt-4">

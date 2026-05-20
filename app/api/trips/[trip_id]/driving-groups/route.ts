@@ -41,8 +41,17 @@ export async function GET(
     return NextResponse.json({ error: groupsError.message }, { status: 500 });
   }
 
+  const { data: unassignedRows } = await supabase
+    .from("trip_participants")
+    .select("username, is_driver")
+    .eq("trip_id", trip_id)
+    .is("group_id", null)
+    .eq("is_driver", false);
+
+  const unassigned_passengers = (unassignedRows ?? []).map((p) => p.username);
+
   if (!groups || groups.length === 0) {
-    return NextResponse.json({ groups: [] });
+    return NextResponse.json({ groups: [], unassigned_passengers });
   }
 
   // For each group, fetch participants in order
@@ -84,5 +93,8 @@ export async function GET(
     });
   }
 
-  return NextResponse.json({ groups: groupsWithParticipants });
+  return NextResponse.json({
+    groups: groupsWithParticipants,
+    unassigned_passengers,
+  });
 }
