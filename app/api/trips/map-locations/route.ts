@@ -2,11 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Location } from "@/types/database";
 
+export type TripMapLocation = Pick<
+  Location,
+  "id" | "address" | "latitude" | "longitude" | "name"
+>;
+
 export type TripMapParticipant = {
   username: string;
   is_driver: boolean;
   is_admin: boolean;
-  location: Pick<Location, "id" | "address" | "latitude" | "longitude" | "name"> | null;
+  location: TripMapLocation | null;
 };
 
 export async function GET(req: NextRequest) {
@@ -17,6 +22,16 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = await createClient();
+
+  const { data: tripRow, error: tripError } = await supabase
+    .from("trips")
+    .select("location")
+    .eq("id", trip_id)
+    .maybeSingle();
+
+  if (tripError) {
+    return NextResponse.json({ error: tripError.message }, { status: 500 });
+  }
 
   const { data: participants, error: participantsError } = await supabase
     .from("trip_participants")
@@ -30,11 +45,17 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const tripDestinationId =
+    typeof tripRow?.location === "string" && tripRow.location.length > 0
+      ? tripRow.location
+      : null;
+
   const locationIds = [
     ...new Set(
-      (participants ?? [])
-        .map((p) => p.location)
-        .filter((id): id is string => typeof id === "string" && id.length > 0),
+      [
+        ...(participants ?? []).map((p) => p.location),
+        tripDestinationId,
+      ].filter((id): id is string => typeof id === "string" && id.length > 0),
     ),
   ];
 
@@ -58,23 +79,27 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const markers: TripMapParticipant[] = (participants ?? []).map((p) => {
-    const loc = p.location ? locationsById.get(p.location) : undefined;
+  const toMapLocation = (id: string | null): TripMapLocation | null => {
+    if (!id) return null;
+    const loc = locationsById.get(id);
+    if (!loc) return null;
     return {
-      username: p.username,
-      is_driver: p.is_driver,
-      is_admin: p.is_admin,
-      location: loc
-        ? {
-            id: loc.id,
-            name: loc.name,
-            address: loc.address,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-          }
-        : null,
+      id: loc.id,
+      name: loc.name,
+      address: loc.address,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
     };
-  });
+  };
 
-  return NextResponse.json({ participants: markers });
+  const markers: TripMapParticipant[] = (participants ?? []).map((p) => ({
+    username: p.username,
+    is_driver: p.is_driver,
+    is_admin: p.is_admin,
+    location: toMapLocation(p.location),
+  }));
+
+  const destination = toMapLocation(tripDestinationId);
+
+  return NextResponse.json({ participants: markers, destination });
 }
