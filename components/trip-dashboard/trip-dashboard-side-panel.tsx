@@ -92,6 +92,7 @@ export function TripDashboardSidePanel({
             members={members}
             isLoading={isLoading}
             memberCount={members.length}
+            onMemberAdded={refresh}
             onMemberRemoved={refresh}
           />
         )}

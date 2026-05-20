@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
+import { AdminAddUser } from "@/components/trip-dashboard/admin-add-user";
 import { AdminRemoveUser } from "@/components/trip-dashboard/admin-remove-user";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { DashboardSectionHeading } from "@/components/trip-dashboard/dashboard-ui";
@@ -12,6 +13,7 @@ type TripInfoPanelProps = {
   members: TripMapParticipant[];
   isLoading: boolean;
   memberCount: number;
+  onMemberAdded?: () => void;
   onMemberRemoved?: () => void;
 };
 
@@ -21,11 +23,13 @@ export function TripInfoPanel({
   members,
   isLoading,
   memberCount,
+  onMemberAdded,
   onMemberRemoved,
 }: TripInfoPanelProps) {
   // Only show the loading state on the FIRST load (when we don't have trip
   // data yet). Once we've loaded once, subsequent refreshes shouldn't unmount
-  // the admin panels below.
+  // the admin panels below — that would wipe their state (like the invite URL
+  // in AdminAddUser).
   if (isLoading && !trip) {
     return (
       <div className={dashboardSectionClass}>
@@ -81,6 +85,14 @@ export function TripInfoPanel({
           </div>
         </dl>
       </div>
+
+      {me?.is_admin && trip?.id && trip.trip_code && (
+        <AdminAddUser
+          tripId={trip.id}
+          tripCode={trip.trip_code}
+          onAdded={onMemberAdded}
+        />
+      )}
 
       {me?.is_admin && trip?.id && (
         <AdminRemoveUser
