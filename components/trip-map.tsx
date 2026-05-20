@@ -5,45 +5,30 @@ import type {
   TripMapLocation,
   TripMapParticipant,
 } from "@/app/api/trips/map-locations/route";
+import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
 import { loadGoogleMaps } from "@/hooks/use-google-maps";
 import { readApiError } from "@/lib/api-error";
+import { createMapPinIcon } from "@/lib/map-pin-icon";
 import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
 import { getTripSession } from "@/lib/trip-session";
 
 const DEFAULT_CENTER = { lat: -33.8688, lng: 151.2093 };
 const DEFAULT_ZOOM = 10;
+const FOCUS_ZOOM = 15;
 const ATLAS_TEAL = "#0c3d3f";
+const MEMBER_PIN_Z = 200;
+const FOCUSED_PIN_Z = 500;
+const DESTINATION_PIN_Z = 1000;
 
-/** Default Google pin shape, filled atlas-teal (built after Maps loads). */
-function tealPinIcon(): google.maps.Symbol {
-  return {
-    path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
-    fillColor: ATLAS_TEAL,
-    fillOpacity: 1,
-    strokeColor: "#ffffff",
-    strokeWeight: 1.5,
-    scale: 1.4,
-    anchor: new google.maps.Point(12, 22),
-    labelOrigin: new google.maps.Point(12, 9),
-  };
-}
+type TripMapProps = {
+  focusUsername?: string | null;
+};
 
-function hasCoords(
-  loc: TripMapLocation | null | undefined,
-): loc is TripMapLocation & { latitude: number; longitude: number } {
-  return (
-    loc != null &&
-    loc.latitude != null &&
-    loc.longitude != null &&
-    Number.isFinite(loc.latitude) &&
-    Number.isFinite(loc.longitude)
-  );
-}
-
-export function TripMap() {
+export function TripMap({ focusUsername }: TripMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const memberMarkersRef = useRef<Map<string, google.maps.Marker>>(new Map());
   const [participants, setParticipants] = useState<TripMapParticipant[]>([]);
   const [destination, setDestination] = useState<TripMapLocation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -124,11 +109,12 @@ export function TripMap() {
       marker.setMap(null);
     }
     markersRef.current = [];
+    memberMarkersRef.current.clear();
 
     const bounds = new google.maps.LatLngBounds();
     let pointCount = 0;
 
-    if (hasCoords(destination)) {
+    if (hasMapCoords(destination)) {
       const position = {
         lat: destination.latitude,
         lng: destination.longitude,
@@ -137,34 +123,34 @@ export function TripMap() {
         map,
         position,
         title: destination.address ?? "Trip destination",
-        zIndex: 1000,
-        icon: tealPinIcon(),
-        label: {
-          text: "D",
-          color: "#ffffff",
-          fontWeight: "bold",
-          fontSize: "13px",
-        },
+        zIndex: DESTINATION_PIN_Z,
+        icon: createMapPinIcon(ATLAS_TEAL, "D"),
       });
       markersRef.current.push(destinationMarker);
       bounds.extend(position);
       pointCount += 1;
     }
 
-    const withCoords = participants.filter((p) => hasCoords(p.location));
+    const withCoords = participants.filter((p) => hasMapCoords(p.location));
 
     for (const p of withCoords) {
       const position = {
         lat: p.location!.latitude!,
         lng: p.location!.longitude!,
       };
+      const fillColor = p.group_color ?? ATLAS_TEAL;
       const marker = new google.maps.Marker({
         map,
         position,
         title: p.username,
-        label: p.username.slice(0, 1).toUpperCase(),
+        zIndex: MEMBER_PIN_Z,
+        icon: createMapPinIcon(
+          fillColor,
+          p.username.slice(0, 1).toUpperCase(),
+        ),
       });
       markersRef.current.push(marker);
+      memberMarkersRef.current.set(p.username, marker);
       bounds.extend(position);
       pointCount += 1;
     }
@@ -179,6 +165,41 @@ export function TripMap() {
       map.setZoom(DEFAULT_ZOOM);
     }
   }, [mapReady, participants, destination]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map || !focusUsername) return;
+
+    const participant = participants.find((p) => p.username === focusUsername);
+    if (!participant || !hasMapCoords(participant.location)) return;
+
+    const position = {
+      lat: participant.location.latitude,
+      lng: participant.location.longitude,
+    };
+
+    map.panTo(position);
+    const zoom = map.getZoom();
+    if (zoom == null || zoom < FOCUS_ZOOM) {
+      map.setZoom(FOCUS_ZOOM);
+    }
+
+    for (const [username, marker] of memberMarkersRef.current) {
+      marker.setZIndex(
+        username === focusUsername ? FOCUSED_PIN_Z : MEMBER_PIN_Z,
+      );
+      marker.setAnimation(null);
+    }
+
+    const focusedMarker = memberMarkersRef.current.get(focusUsername);
+    if (focusedMarker) {
+      focusedMarker.setAnimation(google.maps.Animation.BOUNCE);
+      const stopBounce = window.setTimeout(() => {
+        focusedMarker.setAnimation(null);
+      }, 1400);
+      return () => window.clearTimeout(stopBounce);
+    }
+  }, [focusUsername, mapReady, participants]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -216,7 +237,7 @@ export function TripMap() {
   }
 
   const memberPinCount = participants.filter((p) => p.location).length;
-  const hasDestinationPin = hasCoords(destination);
+  const hasDestinationPin = hasMapCoords(destination);
 
   return (
     <div className="relative h-full w-full">

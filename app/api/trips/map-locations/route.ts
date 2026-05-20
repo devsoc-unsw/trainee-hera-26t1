@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { buildGroupColorById } from "@/lib/driving-group-colors";
 import { createClient } from "@/lib/supabase/server";
 import type { Location } from "@/types/database";
 
@@ -11,6 +12,8 @@ export type TripMapParticipant = {
   username: string;
   is_driver: boolean;
   is_admin: boolean;
+  group_id: string | null;
+  group_color: string | null;
   location: TripMapLocation | null;
 };
 
@@ -33,10 +36,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: tripError.message }, { status: 500 });
   }
 
-  const { data: participants, error: participantsError } = await supabase
-    .from("trip_participants")
-    .select("username, is_driver, is_admin, location")
-    .eq("trip_id", trip_id);
+  const [{ data: participants, error: participantsError }, { data: groups }] =
+    await Promise.all([
+      supabase
+        .from("trip_participants")
+        .select("username, is_driver, is_admin, location, group_id")
+        .eq("trip_id", trip_id),
+      supabase
+        .from("driving_groups")
+        .select("id")
+        .eq("trip_id", trip_id)
+        .order("created_at", { ascending: true }),
+    ]);
 
   if (participantsError) {
     return NextResponse.json(
@@ -92,12 +103,22 @@ export async function GET(req: NextRequest) {
     };
   };
 
-  const markers: TripMapParticipant[] = (participants ?? []).map((p) => ({
-    username: p.username,
-    is_driver: p.is_driver,
-    is_admin: p.is_admin,
-    location: toMapLocation(p.location),
-  }));
+  const groupColorById = buildGroupColorById(groups ?? []);
+
+  const markers: TripMapParticipant[] = (participants ?? []).map((p) => {
+    const groupId =
+      typeof p.group_id === "string" && p.group_id.length > 0
+        ? p.group_id
+        : null;
+    return {
+      username: p.username,
+      is_driver: p.is_driver,
+      is_admin: p.is_admin,
+      group_id: groupId,
+      group_color: groupId ? (groupColorById[groupId] ?? null) : null,
+      location: toMapLocation(p.location),
+    };
+  });
 
   const destination = toMapLocation(tripDestinationId);
 

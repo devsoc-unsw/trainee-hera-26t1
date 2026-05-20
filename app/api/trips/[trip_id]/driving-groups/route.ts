@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getDrivingGroupColor } from "@/lib/driving-group-colors";
 import { createClient } from "@/lib/supabase/server";
 
 type DrivingGroupWithParticipants = {
   id: string;
   name: string | null;
+  color: string;
   driver: {
     username: string;
     seats: number | null;
@@ -46,7 +48,7 @@ export async function GET(
   // For each group, fetch participants in order
   const groupsWithParticipants: DrivingGroupWithParticipants[] = [];
 
-  for (const group of groups) {
+  for (const [groupIndex, group] of groups.entries()) {
     const { data: participants, error: participantsError } = await supabase
       .from("trip_participants")
       .select("username, is_driver, seats, group_order")
@@ -68,6 +70,7 @@ export async function GET(
     groupsWithParticipants.push({
       id: group.id,
       name: group.name,
+      color: getDrivingGroupColor(groupIndex),
       driver: driver
         ? {
             username: driver.username,

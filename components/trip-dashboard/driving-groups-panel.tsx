@@ -17,6 +17,7 @@ type ParticipantLocation = {
 type DrivingGroup = {
   id: string;
   name: string | null;
+  color: string;
   driver: {
     username: string;
     seats: number | null;
@@ -161,8 +162,14 @@ export function DrivingGroupsPanel() {
               <div
                 key={group.id}
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                style={{ borderLeftWidth: 4, borderLeftColor: group.color }}
               >
-                <h3 className="text-sm font-medium text-slate-900">
+                <h3 className="flex items-center gap-2 text-sm font-medium text-slate-900">
+                  <span
+                    className="inline-block size-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: group.color }}
+                    aria-hidden
+                  />
                   {group.name || `Group ${group.id.slice(0, 8)}`}
                 </h3>
 
