@@ -89,9 +89,11 @@ export function TripDashboardSidePanel({
           <TripInfoPanel
             trip={trip}
             me={me}
+            members={members}
             isLoading={isLoading}
             memberCount={members.length}
             onMemberAdded={refresh}
+            onMemberRemoved={refresh}
           />
         )}
         {activeTab === "personal" && (
