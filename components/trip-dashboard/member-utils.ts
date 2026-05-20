@@ -1,5 +1,24 @@
-import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
+import type {
+  TripMapLocation,
+  TripMapParticipant,
+} from "@/app/api/trips/map-locations/route";
 import type { RoleFilter } from "@/components/trip-dashboard/types";
+
+export function hasMapCoords(
+  loc: TripMapLocation | null | undefined,
+): loc is TripMapLocation & { latitude: number; longitude: number } {
+  return (
+    loc != null &&
+    loc.latitude != null &&
+    loc.longitude != null &&
+    Number.isFinite(loc.latitude) &&
+    Number.isFinite(loc.longitude)
+  );
+}
+
+export function memberHasMapPin(member: TripMapParticipant): boolean {
+  return hasMapCoords(member.location);
+}
 
 export function sortMembers(members: TripMapParticipant[]): TripMapParticipant[] {
   return [...members].sort((a, b) => {

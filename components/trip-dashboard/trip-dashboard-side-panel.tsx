@@ -18,8 +18,12 @@ import { useTripDashboardData } from "@/components/trip-dashboard/use-trip-dashb
 
 export function TripDashboardSidePanel({
   onPinSaved,
+  focusUsername,
+  onMemberFocus,
 }: {
   onPinSaved?: () => void;
+  focusUsername?: string | null;
+  onMemberFocus?: (username: string) => void;
 }) {
   const { session, trip, me, members, isLoading, error, refresh } =
     useTripDashboardData();
@@ -116,6 +120,8 @@ export function TripDashboardSidePanel({
             currentUsername={me?.username}
             onMemberAdded={refresh}
             onMemberRemoved={refresh}
+            focusUsername={focusUsername}
+            onMemberFocus={onMemberFocus}
           />
         )}
         {activeTab === "groups" && <DrivingGroupsPanel />}

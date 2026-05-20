@@ -29,6 +29,8 @@ type MembersPanelProps = {
   currentUsername?: string;
   onMemberAdded?: () => void;
   onMemberRemoved?: () => void;
+  focusUsername?: string | null;
+  onMemberFocus?: (username: string) => void;
 };
 
 export function MembersPanel({
@@ -46,6 +48,8 @@ export function MembersPanel({
   currentUsername,
   onMemberAdded,
   onMemberRemoved,
+  focusUsername,
+  onMemberFocus,
 }: MembersPanelProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -93,7 +97,15 @@ export function MembersPanel({
           <ul className="flex flex-col gap-2">
             {members.map((member) => (
               <li key={member.username}>
-                <MemberRow member={member} />
+                <MemberRow
+                  member={member}
+                  isFocused={focusUsername === member.username}
+                  onFocus={
+                    onMemberFocus
+                      ? () => onMemberFocus(member.username)
+                      : undefined
+                  }
+                />
               </li>
             ))}
           </ul>
