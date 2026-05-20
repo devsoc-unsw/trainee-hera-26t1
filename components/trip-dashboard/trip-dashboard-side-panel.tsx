@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useDrivingGroupsCache } from "@/hooks/use-driving-groups-cache";
 import { Info, User, Users, UsersRound } from "lucide-react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
@@ -55,6 +56,18 @@ export function TripDashboardSidePanel({
   const driverCount = members.filter((m) => m.is_driver).length;
   const passengerCount = members.length - driverCount;
 
+  const {
+    layout: groupsLayout,
+    loading: groupsLoading,
+    version: groupsVersion,
+    refresh: refreshGroups,
+  } = useDrivingGroupsCache(trip?.id);
+
+  const handleDataChange = useCallback(() => {
+    void refreshGroups();
+    onDataChange?.();
+  }, [refreshGroups, onDataChange]);
+
   if (!session) {
     return (
       <div className={dashboardSectionClass}>
@@ -106,20 +119,20 @@ export function TripDashboardSidePanel({
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-2">
-        {activeTab === "trip-info" && (
+        <div className={activeTab === "trip-info" ? "" : "hidden"}>
           <TripInfoPanel
             trip={trip}
             me={me}
             isLoading={isLoading}
             memberCount={members.length}
-            onTripUpdated={onDataChange}
+            onTripUpdated={handleDataChange}
             onDestinationFocus={onDestinationFocus}
           />
-        )}
-        {activeTab === "personal" && (
-          <PersonalInfoPanel onPinSaved={onDataChange} />
-        )}
-        {activeTab === "members" && (
+        </div>
+        <div className={activeTab === "personal" ? "" : "hidden"}>
+          <PersonalInfoPanel onPinSaved={handleDataChange} />
+        </div>
+        <div className={activeTab === "members" ? "" : "hidden"}>
           <MembersPanel
             members={filteredMembers}
             isLoading={isLoading}
@@ -133,14 +146,24 @@ export function TripDashboardSidePanel({
             tripCode={trip?.trip_code ?? undefined}
             allMembers={members}
             currentUsername={me?.username}
-            onMemberAdded={onDataChange}
-            onMemberRemoved={onDataChange}
+            onMemberAdded={handleDataChange}
+            onMemberRemoved={handleDataChange}
             selectedUsername={selectedUsername}
             onMemberSelect={onMemberSelect}
           />
-        )}
-        {activeTab === "groups" && (
-          <DrivingGroupsPanel onGroupsFormed={onDataChange} />
+        </div>
+        {trip?.id && (
+          <div className={activeTab === "groups" ? "" : "hidden"}>
+            <DrivingGroupsPanel
+              tripId={trip.id}
+              isAdmin={me?.is_admin ?? false}
+              layout={groupsLayout}
+              layoutVersion={groupsVersion}
+              groupsLoading={groupsLoading}
+              onGroupsRefresh={refreshGroups}
+              onGroupsFormed={handleDataChange}
+            />
+          </div>
         )}
       </div>
     </div>

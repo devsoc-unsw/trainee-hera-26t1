@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { DashboardSectionHeading } from "@/components/trip-dashboard/dashboard-ui";
+import { DrivingGroupsEditor } from "@/components/trip-dashboard/driving-groups-editor";
 import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
 import type { TripSummary } from "@/components/trip-dashboard/use-trip-dashboard-data";
+import type { DraftLayout } from "@/lib/driving-group-draft";
 import { Button } from "@/components/ui/button";
 import { getTripSession } from "@/lib/trip-session";
 
@@ -16,63 +18,27 @@ type ParticipantLocation = {
   longitude: number;
 };
 
-type DrivingGroup = {
-  id: string;
-  name: string | null;
-  color: string;
-  driver: {
-    username: string;
-    seats: number | null;
-  } | null;
-  passengers: {
-    username: string;
-    order: number;
-  }[];
-};
-
 type DrivingGroupsPanelProps = {
+  tripId: string;
+  isAdmin?: boolean;
+  layout: DraftLayout | null;
+  layoutVersion: number;
+  groupsLoading: boolean;
+  onGroupsRefresh: () => Promise<void>;
   onGroupsFormed?: () => void;
 };
 
-export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) {
-  const [isAdmin, setIsAdmin] = useState(false);
+export function DrivingGroupsPanel({
+  tripId,
+  isAdmin = false,
+  layout,
+  layoutVersion,
+  groupsLoading,
+  onGroupsRefresh,
+  onGroupsFormed,
+}: DrivingGroupsPanelProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [groups, setGroups] = useState<DrivingGroup[]>([]);
-
-  useEffect(() => {
-    const session = getTripSession();
-    if (!session) return;
-
-    const { username, tripId } = session;
-
-    fetch(
-      `/api/participants/me?username=${encodeURIComponent(username)}&trip_id=${encodeURIComponent(tripId)}`,
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.participant?.is_admin) setIsAdmin(true);
-      })
-      .catch(() => {
-        // ignore
-      });
-
-    fetchGroups(tripId);
-  }, []);
-
-  async function fetchGroups(tripId: string) {
-    try {
-      const res = await fetch(
-        `/api/trips/${encodeURIComponent(tripId)}/driving-groups`,
-      );
-      const data = await res.json();
-      if (res.ok) {
-        setGroups(data.groups || []);
-      }
-    } catch {
-      // ignore
-    }
-  }
 
   async function handleFormGroups() {
     setLoading(true);
@@ -85,10 +51,10 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
       return;
     }
 
-    const tripId = session.tripId;
+    const currentTripId = session.tripId;
 
     try {
-      const tripParams = new URLSearchParams({ trip_id: tripId });
+      const tripParams = new URLSearchParams({ trip_id: currentTripId });
       const tripRes = await fetch(`/api/trips/by-id?${tripParams}`);
       const tripJson = (await tripRes.json()) as {
         trip?: TripSummary;
@@ -108,7 +74,7 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
       }
 
       const pRes = await fetch(
-        `/api/trips/${encodeURIComponent(tripId)}/participants`,
+        `/api/trips/${encodeURIComponent(currentTripId)}/participants`,
       );
       const pData = await pRes.json();
       if (!pRes.ok) {
@@ -149,7 +115,7 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
       const saveRes = await fetch(`/api/driving-groups/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trip_id: tripId, routes }),
+        body: JSON.stringify({ trip_id: currentTripId, routes }),
       });
       const saveData = await saveRes.json();
       if (!saveRes.ok) {
@@ -157,8 +123,7 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
       }
 
       setMessage(`Success: created ${saveData.groups_created} groups`);
-
-      await fetchGroups(tripId);
+      await onGroupsRefresh();
       onGroupsFormed?.();
     } catch (err: unknown) {
       setMessage(err instanceof Error ? err.message : String(err));
@@ -195,43 +160,16 @@ export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) 
         </div>
       )}
 
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-        {groups.length > 0 ? (
-          <div className="space-y-2">
-            {groups.map((group) => (
-              <div
-                key={group.id}
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-                style={{ borderLeftWidth: 4, borderLeftColor: group.color }}
-              >
-                <h3 className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                  <span
-                    className="inline-block size-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: group.color }}
-                    aria-hidden
-                  />
-                  {group.name || `Group ${group.id.slice(0, 8)}`}
-                </h3>
-
-                <ol className="mt-1 space-y-1 text-sm text-slate-600">
-                  {group.driver && (
-                    <li>
-                      1. {group.driver.username}{" "}
-                      <span className="text-slate-400">(driver)</span>
-                    </li>
-                  )}
-                  {group.passengers.map((p, index) => (
-                    <li key={p.username}>
-                      {group.driver ? index + 2 : index + 1}. {p.username}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">No groups yet.</p>
-        )}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <DrivingGroupsEditor
+          tripId={tripId}
+          isAdmin={isAdmin}
+          layout={layout}
+          layoutVersion={layoutVersion}
+          loading={groupsLoading}
+          onRefresh={onGroupsRefresh}
+          onChanged={onGroupsFormed}
+        />
       </div>
     </div>
   );
