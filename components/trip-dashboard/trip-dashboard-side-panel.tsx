@@ -88,11 +88,8 @@ export function TripDashboardSidePanel({
         {activeTab === "trip-info" && (
           <TripInfoPanel
             trip={trip}
-            me={me}
-            members={members}
             isLoading={isLoading}
             memberCount={members.length}
-            onMemberRemoved={refresh}
           />
         )}
         {activeTab === "personal" && (
@@ -110,7 +107,10 @@ export function TripDashboardSidePanel({
             isAdmin={me?.is_admin ?? false}
             tripId={trip?.id}
             tripCode={trip?.trip_code ?? undefined}
+            allMembers={members}
+            currentUsername={me?.username}
             onMemberAdded={refresh}
+            onMemberRemoved={refresh}
           />
         )}
         {activeTab === "groups" && <DrivingGroupsPanel />}

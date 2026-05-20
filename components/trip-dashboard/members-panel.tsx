@@ -1,6 +1,7 @@
 import { Car } from "lucide-react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { AdminAddUser } from "@/components/trip-dashboard/admin-add-user";
+import { AdminRemoveUser } from "@/components/trip-dashboard/admin-remove-user";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import {
   DashboardFilterChip,
@@ -17,12 +18,17 @@ type MembersPanelProps = {
   driverCount: number;
   passengerCount: number;
   totalCount: number;
-  // Admin-only "add a member" form is rendered below the list when these are
-  // provided. Pass undefined / isAdmin=false for non-admins to hide it.
+  // Admin-only cards rendered below the list when these are provided. Pass
+  // undefined / isAdmin=false for non-admins to hide them.
   isAdmin?: boolean;
   tripId?: string;
   tripCode?: string;
+  // Unfiltered member list for the admin "remove a member" dropdown so the
+  // role-filter chips above don't hide removable people.
+  allMembers?: TripMapParticipant[];
+  currentUsername?: string;
   onMemberAdded?: () => void;
+  onMemberRemoved?: () => void;
 };
 
 export function MembersPanel({
@@ -36,7 +42,10 @@ export function MembersPanel({
   isAdmin,
   tripId,
   tripCode,
+  allMembers,
+  currentUsername,
   onMemberAdded,
+  onMemberRemoved,
 }: MembersPanelProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -96,6 +105,15 @@ export function MembersPanel({
           tripId={tripId}
           tripCode={tripCode}
           onAdded={onMemberAdded}
+        />
+      )}
+
+      {isAdmin && tripId && allMembers && currentUsername && (
+        <AdminRemoveUser
+          tripId={tripId}
+          members={allMembers}
+          currentUsername={currentUsername}
+          onRemoved={onMemberRemoved}
         />
       )}
     </div>
