@@ -22,9 +22,11 @@ const DESTINATION_PIN_Z = 1000;
 
 type TripMapProps = {
   focusUsername?: string | null;
+  /** Increment to refetch pins (e.g. after forming driving groups). */
+  refreshKey?: number;
 };
 
-export function TripMap({ focusUsername }: TripMapProps) {
+export function TripMap({ focusUsername, refreshKey = 0 }: TripMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -67,7 +69,7 @@ export function TripMap({ focusUsername }: TripMapProps) {
 
   useEffect(() => {
     void loadMapData();
-  }, [loadMapData]);
+  }, [loadMapData, refreshKey]);
 
   useEffect(() => {
     if (!isGoogleMapsConfigured() || !mapContainerRef.current) return;
