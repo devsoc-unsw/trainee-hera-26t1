@@ -3,13 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params?: { trip_id?: string } } = {},
+  { params }: { params: Promise<{ trip_id: string }> },
 ) {
-  // `params` may be a Promise in some Next.js runtimes; await it safely.
-  const resolvedParams = await (context.params as unknown as Promise<any> | any);
-
-  // Support both route param and query param for robustness
-  const trip_id = resolvedParams?.trip_id || req.nextUrl.searchParams.get("trip_id") || "";
+  const { trip_id: tripIdParam } = await params;
+  const trip_id = tripIdParam || req.nextUrl.searchParams.get("trip_id") || "";
 
   if (!trip_id) {
     return NextResponse.json({ error: "trip_id is required" }, { status: 400 });

@@ -118,7 +118,6 @@ export async function PATCH(req: NextRequest) {
     updates.map((assignment) =>
       supabase
         .from("trip_participants")
-        // @ts-expect-error group_order not in generated types yet
         .update({
           group_id: assignment.group_id,
           group_order: assignment.group_order,
