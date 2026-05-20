@@ -26,11 +26,6 @@ const TripDashboardPage = () => {
     setFocusUsername(null);
   };
 
-  const invalidateTripData = () => {
-    setDataRefreshKey((k) => k + 1);
-    setFocusUsername(null);
-  };
-
   return (
     <main className="relative h-dvh w-full overflow-hidden">
       <DashboardNavbar />
