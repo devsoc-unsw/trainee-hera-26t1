@@ -10,9 +10,16 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient();
 
+  // We alias the nested locations row as `destination` so consumers don't
+  // have to disambiguate between `trip.location` (the UUID FK) and the
+  // resolved place. The UUID is kept too so other features that need to
+  // pass it back (e.g. updating the destination, group-solver inputs) still
+  // have access to it without a second fetch.
   const { data: trip, error } = await supabase
     .from("trips")
-    .select("id, trip_name, trip_date, location, trip_code")
+    .select(
+      "id, trip_name, trip_date, location, trip_code, destination:locations(id, name, address, latitude, longitude)",
+    )
     .eq("id", trip_id)
     .maybeSingle();
 

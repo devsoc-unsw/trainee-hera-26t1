@@ -88,8 +88,13 @@ export function TripDashboardSidePanel({
         {activeTab === "trip-info" && (
           <TripInfoPanel
             trip={trip}
+            me={me}
             isLoading={isLoading}
             memberCount={members.length}
+            onTripUpdated={() => {
+              void refresh();
+              onPinSaved?.();
+            }}
           />
         )}
         {activeTab === "personal" && (

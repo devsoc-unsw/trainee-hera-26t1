@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
+import type {
+  TripMapLocation,
+  TripMapParticipant,
+} from "@/app/api/trips/map-locations/route";
 import { loadGoogleMaps } from "@/hooks/use-google-maps";
 import { readApiError } from "@/lib/api-error";
 import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
@@ -9,19 +12,47 @@ import { getTripSession } from "@/lib/trip-session";
 
 const DEFAULT_CENTER = { lat: -33.8688, lng: 151.2093 };
 const DEFAULT_ZOOM = 10;
+const ATLAS_TEAL = "#0c3d3f";
+
+/** Default Google pin shape, filled atlas-teal (built after Maps loads). */
+function tealPinIcon(): google.maps.Symbol {
+  return {
+    path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
+    fillColor: ATLAS_TEAL,
+    fillOpacity: 1,
+    strokeColor: "#ffffff",
+    strokeWeight: 1.5,
+    scale: 1.4,
+    anchor: new google.maps.Point(12, 22),
+    labelOrigin: new google.maps.Point(12, 9),
+  };
+}
+
+function hasCoords(
+  loc: TripMapLocation | null | undefined,
+): loc is TripMapLocation & { latitude: number; longitude: number } {
+  return (
+    loc != null &&
+    loc.latitude != null &&
+    loc.longitude != null &&
+    Number.isFinite(loc.latitude) &&
+    Number.isFinite(loc.longitude)
+  );
+}
 
 export function TripMap() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const [participants, setParticipants] = useState<TripMapParticipant[]>([]);
+  const [destination, setDestination] = useState<TripMapLocation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
   const session = getTripSession();
   const tripId = session?.tripId;
 
-  const loadParticipants = useCallback(async () => {
+  const loadMapData = useCallback(async () => {
     if (!tripId) {
       setError("No trip session. Join a trip from the home page.");
       return;
@@ -38,16 +69,20 @@ export function TripMap() {
         return;
       }
 
-      const json = (await res.json()) as { participants: TripMapParticipant[] };
+      const json = (await res.json()) as {
+        participants: TripMapParticipant[];
+        destination: TripMapLocation | null;
+      };
       setParticipants(json.participants ?? []);
+      setDestination(json.destination ?? null);
     } catch {
       setError("Could not load map pins");
     }
   }, [tripId]);
 
   useEffect(() => {
-    void loadParticipants();
-  }, [loadParticipants]);
+    void loadMapData();
+  }, [loadMapData]);
 
   useEffect(() => {
     if (!isGoogleMapsConfigured() || !mapContainerRef.current) return;
@@ -90,12 +125,33 @@ export function TripMap() {
     }
     markersRef.current = [];
 
-    const withCoords = participants.filter(
-      (p) =>
-        p.location?.latitude != null && p.location?.longitude != null,
-    );
-
     const bounds = new google.maps.LatLngBounds();
+    let pointCount = 0;
+
+    if (hasCoords(destination)) {
+      const position = {
+        lat: destination.latitude,
+        lng: destination.longitude,
+      };
+      const destinationMarker = new google.maps.Marker({
+        map,
+        position,
+        title: destination.address ?? "Trip destination",
+        zIndex: 1000,
+        icon: tealPinIcon(),
+        label: {
+          text: "D",
+          color: "#ffffff",
+          fontWeight: "bold",
+          fontSize: "13px",
+        },
+      });
+      markersRef.current.push(destinationMarker);
+      bounds.extend(position);
+      pointCount += 1;
+    }
+
+    const withCoords = participants.filter((p) => hasCoords(p.location));
 
     for (const p of withCoords) {
       const position = {
@@ -110,18 +166,19 @@ export function TripMap() {
       });
       markersRef.current.push(marker);
       bounds.extend(position);
+      pointCount += 1;
     }
 
-    if (withCoords.length === 1) {
+    if (pointCount === 1) {
       map.setCenter(bounds.getCenter()!);
       map.setZoom(14);
-    } else if (withCoords.length > 1) {
+    } else if (pointCount > 1) {
       map.fitBounds(bounds, 48);
     } else {
       map.setCenter(DEFAULT_CENTER);
       map.setZoom(DEFAULT_ZOOM);
     }
-  }, [mapReady, participants]);
+  }, [mapReady, participants, destination]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -158,7 +215,8 @@ export function TripMap() {
     );
   }
 
-  const pinCount = participants.filter((p) => p.location).length;
+  const memberPinCount = participants.filter((p) => p.location).length;
+  const hasDestinationPin = hasCoords(destination);
 
   return (
     <div className="relative h-full w-full">
@@ -176,10 +234,26 @@ export function TripMap() {
           {error}
         </p>
       )}
-      {!error && participants.length > 0 && (
-        <p className="absolute bottom-4 left-4 z-[1] rounded-xl bg-white/90 px-3 py-1.5 text-xs text-slate-600 shadow-md">
-          {pinCount} of {participants.length} members have set a pin
-        </p>
+      {!error && (participants.length > 0 || hasDestinationPin) && (
+        <div className="absolute bottom-4 left-4 z-[1] flex flex-col gap-1.5 rounded-xl bg-white/90 px-3 py-2 text-xs text-slate-600 shadow-md">
+          {hasDestinationPin && (
+            <span className="flex items-center gap-1.5">
+              <span
+                className="inline-flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                style={{ backgroundColor: ATLAS_TEAL }}
+                aria-hidden
+              >
+                D
+              </span>
+              Trip destination
+            </span>
+          )}
+          {participants.length > 0 && (
+            <span>
+              {memberPinCount} of {participants.length} members have set a pin
+            </span>
+          )}
+        </div>
       )}
     </div>
   );
