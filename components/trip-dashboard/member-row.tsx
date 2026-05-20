@@ -5,13 +5,12 @@ import { contrastingTextColor } from "@/lib/driving-group-colors";
 
 type MemberRowProps = {
   member: TripMapParticipant;
-  isFocused?: boolean;
-  onFocus?: () => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
 };
 
-export function MemberRow({ member, isFocused, onFocus }: MemberRowProps) {
+export function MemberRow({ member, isSelected, onSelect }: MemberRowProps) {
   const hasPin = memberHasMapPin(member);
-  const canFocus = hasPin && !!onFocus;
   const groupColor = member.group_color;
   const avatarStyle = groupColor
     ? {
@@ -48,7 +47,11 @@ export function MemberRow({ member, isFocused, onFocus }: MemberRowProps) {
           {member.is_driver
             ? `Driver${typeof member.seats === "number" ? ` · ${member.seats} seat${member.seats === 1 ? "" : "s"}` : ""}`
             : "Passenger"}
-          {hasPin ? " · Pin set" : " · No pin yet"}
+          {member.group_name
+            ? ` · ${member.group_name}`
+            : hasPin
+              ? " · Pin set"
+              : " · No pin yet"}
         </p>
       </div>
       {member.is_admin && (
@@ -60,33 +63,26 @@ export function MemberRow({ member, isFocused, onFocus }: MemberRowProps) {
   );
 
   const rowClass = `flex w-full items-center gap-3 rounded-2xl border bg-white/80 px-3 py-2.5 ${
-    isFocused
+    isSelected
       ? "border-atlas-teal ring-2 ring-atlas-teal/25"
       : groupColor
         ? "border-slate-200"
         : "border-atlas-teal/10"
   }`;
 
-  if (canFocus) {
+  if (onSelect) {
     return (
       <button
         type="button"
-        onClick={onFocus}
+        onClick={onSelect}
         className={`${rowClass} cursor-pointer transition-shadow hover:bg-white hover:shadow-sm`}
-        aria-label={`Show ${member.username} on map`}
-        aria-pressed={isFocused}
+        aria-label={`View details for ${member.username}`}
+        aria-pressed={isSelected}
       >
         {content}
       </button>
     );
   }
 
-  return (
-    <div
-      className={rowClass}
-      title={hasPin ? undefined : "This member has not set a map pin yet"}
-    >
-      {content}
-    </div>
-  );
+  return <div className={rowClass}>{content}</div>;
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Info, User, Users, UsersRound } from "lucide-react";
+import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { DashboardNavTab } from "@/components/trip-dashboard/dashboard-ui";
 import { DrivingGroupsPanel } from "@/components/trip-dashboard/driving-groups-panel";
@@ -14,29 +15,37 @@ import { PersonalInfoPanel } from "@/components/trip-dashboard/personal-info-pan
 import { TripDashboardHeader } from "@/components/trip-dashboard/trip-dashboard-header";
 import { TripInfoPanel } from "@/components/trip-dashboard/trip-info-panel";
 import type { RoleFilter, SidebarTab } from "@/components/trip-dashboard/types";
-import { useTripDashboardData } from "@/components/trip-dashboard/use-trip-dashboard-data";
+import type { TripSummary } from "@/components/trip-dashboard/use-trip-dashboard-data";
+import type { TripParticipant } from "@/types/database";
+import type { TripSession } from "@/lib/trip-session";
+
+type TripDashboardSidePanelProps = {
+  session: TripSession | null;
+  trip: TripSummary | null;
+  me: TripParticipant | null;
+  members: TripMapParticipant[];
+  isLoading: boolean;
+  error: string | null;
+  onDataChange?: () => void;
+  selectedUsername?: string | null;
+  onMemberSelect?: (username: string) => void;
+  onDestinationFocus?: () => void;
+};
 
 export function TripDashboardSidePanel({
+  session,
+  trip,
+  me,
+  members,
+  isLoading,
+  error,
   onDataChange,
-  focusUsername,
-  onMemberFocus,
+  selectedUsername,
+  onMemberSelect,
   onDestinationFocus,
-}: {
-  /** Bumps map + refetches sidebar trip data (members, groups, etc.). */
-  onDataChange?: () => void;
-  focusUsername?: string | null;
-  onMemberFocus?: (username: string) => void;
-  onDestinationFocus?: () => void;
-}) {
-  const { session, trip, me, members, isLoading, error, refresh } =
-    useTripDashboardData();
+}: TripDashboardSidePanelProps) {
   const [activeTab, setActiveTab] = useState<SidebarTab>("trip-info");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
-
-  const invalidateTripData = useCallback(() => {
-    void refresh();
-    onDataChange?.();
-  }, [refresh, onDataChange]);
 
   const filteredMembers = useMemo(
     () => filterMembers(sortMembers(members), roleFilter),
@@ -103,12 +112,12 @@ export function TripDashboardSidePanel({
             me={me}
             isLoading={isLoading}
             memberCount={members.length}
-            onTripUpdated={invalidateTripData}
+            onTripUpdated={onDataChange}
             onDestinationFocus={onDestinationFocus}
           />
         )}
         {activeTab === "personal" && (
-          <PersonalInfoPanel onPinSaved={invalidateTripData} />
+          <PersonalInfoPanel onPinSaved={onDataChange} />
         )}
         {activeTab === "members" && (
           <MembersPanel
@@ -124,14 +133,14 @@ export function TripDashboardSidePanel({
             tripCode={trip?.trip_code ?? undefined}
             allMembers={members}
             currentUsername={me?.username}
-            onMemberAdded={invalidateTripData}
-            onMemberRemoved={invalidateTripData}
-            focusUsername={focusUsername}
-            onMemberFocus={onMemberFocus}
+            onMemberAdded={onDataChange}
+            onMemberRemoved={onDataChange}
+            selectedUsername={selectedUsername}
+            onMemberSelect={onMemberSelect}
           />
         )}
         {activeTab === "groups" && (
-          <DrivingGroupsPanel onGroupsFormed={invalidateTripData} />
+          <DrivingGroupsPanel onGroupsFormed={onDataChange} />
         )}
       </div>
     </div>

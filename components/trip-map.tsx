@@ -28,12 +28,16 @@ const FOCUSED_DESTINATION_PIN_Z = 1100;
 type TripMapProps = {
   focusUsername?: string | null;
   focusDestination?: boolean;
+  selectedUsername?: string | null;
+  onMemberSelect?: (username: string) => void;
   refreshKey?: number;
 };
 
 export function TripMap({
   focusUsername,
   focusDestination = false,
+  selectedUsername,
+  onMemberSelect,
   refreshKey = 0,
 }: TripMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -153,16 +157,21 @@ export function TripMap({
         lng: p.location!.longitude!,
       };
       const fillColor = p.group_color ?? ATLAS_TEAL;
+      const isSelected = selectedUsername === p.username;
       const marker = new google.maps.Marker({
         map,
         position,
         title: p.username,
-        zIndex: MEMBER_PIN_Z,
+        zIndex: isSelected ? FOCUSED_PIN_Z : MEMBER_PIN_Z,
         icon: createMapPinIcon(
           fillColor,
           p.username.slice(0, 1).toUpperCase(),
         ),
+        cursor: onMemberSelect ? "pointer" : undefined,
       });
+      if (onMemberSelect) {
+        marker.addListener("click", () => onMemberSelect(p.username));
+      }
       markersRef.current.push(marker);
       memberMarkersRef.current.set(p.username, marker);
       bounds.extend(position);
@@ -178,7 +187,7 @@ export function TripMap({
       map.setCenter(DEFAULT_CENTER);
       map.setZoom(DEFAULT_ZOOM);
     }
-  }, [mapReady, participants, destination]);
+  }, [mapReady, participants, destination, selectedUsername, onMemberSelect]);
 
   useEffect(() => {
     const map = mapRef.current;
