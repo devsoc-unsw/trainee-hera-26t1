@@ -1,10 +1,13 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 type JoinTripPageProps = {
   searchParams: Promise<{ code?: string }>;
 };
 
-const JoinTripPage = async ({ searchParams }: JoinTripPageProps) => {
+async function JoinTripRedirect({
+  searchParams,
+}: JoinTripPageProps): Promise<null> {
   const { code } = await searchParams;
   const trimmed = code?.trim();
 
@@ -13,6 +16,15 @@ const JoinTripPage = async ({ searchParams }: JoinTripPageProps) => {
   }
 
   redirect("/");
+  return null;
+}
+
+const JoinTripPage = (props: JoinTripPageProps) => {
+  return (
+    <Suspense fallback={null}>
+      <JoinTripRedirect {...props} />
+    </Suspense>
+  );
 };
 
 export default JoinTripPage;

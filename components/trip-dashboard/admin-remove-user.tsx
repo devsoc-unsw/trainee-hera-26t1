@@ -139,7 +139,7 @@ export function AdminRemoveUser({
             </button>
           )}
 
-          {step === "confirming" && selectedMember && (
+          {(step === "confirming" || step === "loading") && selectedMember && (
             <div className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
               <p className="text-sm font-medium text-red-700">
                 Remove{" "}
@@ -158,7 +158,7 @@ export function AdminRemoveUser({
                   disabled={step === "loading"}
                   className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
                 >
-                  Yes, remove
+                  {step === "loading" ? "Removing…" : "Yes, remove"}
                 </button>
                 <button
                   type="button"

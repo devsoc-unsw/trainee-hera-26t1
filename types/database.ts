@@ -59,6 +59,7 @@ export type Database = {
           username: string;
           trip_id: string;
           group_id: string | null;
+          group_order: number | null;
           location: string | null;
           is_driver: boolean;
           password_hash: string | null;
@@ -69,6 +70,7 @@ export type Database = {
           username: string;
           trip_id: string;
           group_id?: string | null;
+          group_order?: number | null;
           location?: string | null;
           is_driver: boolean;
           password_hash?: string | null;
@@ -79,6 +81,7 @@ export type Database = {
           username?: string;
           trip_id?: string;
           group_id?: string | null;
+          group_order?: number | null;
           location?: string | null;
           is_driver?: boolean;
           password_hash?: string | null;
@@ -139,4 +142,5 @@ export type Trip = Tables<"trips">;
 export type DrivingGroupInsert = TablesInsert<"driving_groups">;
 export type LocationInsert = TablesInsert<"locations">;
 export type TripParticipantInsert = TablesInsert<"trip_participants">;
+export type TripParticipantUpdate = TablesUpdate<"trip_participants">;
 export type TripInsert = TablesInsert<"trips">;

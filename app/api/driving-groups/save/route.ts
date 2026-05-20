@@ -56,7 +56,6 @@ export async function POST(req: Request) {
   // Clear old group assignments from all participants
   const { error: clearError } = await supabase
     .from("trip_participants")
-    // @ts-ignore
     .update({ group_id: null, group_order: null })
     .eq("trip_id", trip_id);
 
@@ -97,24 +96,18 @@ export async function POST(req: Request) {
   }
 
   // 2. Update trip_participants with group_id and group_order
-  const participantUpdates: Promise<any>[] = [];
-
-  routes.forEach((route, groupIndex) => {
+  const participantUpdates = routes.flatMap((route, groupIndex) => {
     const groupId = groups[groupIndex].id;
-    route.forEach((username, orderIndex) => {
+    return route.map((username, orderIndex) => {
       const update: TripParticipantUpdate = {
         group_id: groupId,
-        // @ts-ignore - group_order is not in the generated type yet
         group_order: orderIndex,
       };
-      participantUpdates.push(
-        // @ts-ignore
-        supabase
-          .from("trip_participants")
-          .update(update)
-          .eq("trip_id", trip_id)
-          .eq("username", username),
-      );
+      return supabase
+        .from("trip_participants")
+        .update(update)
+        .eq("trip_id", trip_id)
+        .eq("username", username);
     });
   });
 
@@ -124,7 +117,9 @@ export async function POST(req: Request) {
   if (errors.length > 0) {
     // Note: This is not transactional. Some participants might be updated.
     return NextResponse.json(
-      { error: `Failed to update some participants: ${errors.map((e) => e.error.message).join(", ")}` },
+      {
+        error: `Failed to update some participants: ${errors.map((e) => e.error?.message ?? "unknown error").join(", ")}`,
+      },
       { status: 500 },
     );
   }

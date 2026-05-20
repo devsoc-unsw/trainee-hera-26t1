@@ -29,6 +29,7 @@ create table public.trip_participants (
   username text not null,
   trip_id uuid not null references public.trips (id),
   group_id uuid references public.driving_groups (id),
+  group_order integer,
   location uuid references public.locations (id),
   is_driver boolean not null,
   password_hash text,
