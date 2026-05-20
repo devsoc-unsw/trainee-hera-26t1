@@ -14,6 +14,7 @@ export type TripMapParticipant = {
   is_admin: boolean;
   seats: number | null;
   group_id: string | null;
+  group_name: string | null;
   group_color: string | null;
   location: TripMapLocation | null;
 };
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
         .eq("trip_id", trip_id),
       supabase
         .from("driving_groups")
-        .select("id")
+        .select("id, name")
         .eq("trip_id", trip_id)
         .order("created_at", { ascending: true }),
     ]);
@@ -105,6 +106,9 @@ export async function GET(req: NextRequest) {
   };
 
   const groupColorById = buildGroupColorById(groups ?? []);
+  const groupNameById = new Map(
+    (groups ?? []).map((g) => [g.id, g.name as string | null]),
+  );
 
   const markers: TripMapParticipant[] = (participants ?? []).map((p) => {
     const groupId =
@@ -117,6 +121,7 @@ export async function GET(req: NextRequest) {
       is_admin: p.is_admin,
       seats: typeof p.seats === "number" ? p.seats : null,
       group_id: groupId,
+      group_name: groupId ? (groupNameById.get(groupId) ?? null) : null,
       group_color: groupId ? (groupColorById[groupId] ?? null) : null,
       location: toMapLocation(p.location),
     };
