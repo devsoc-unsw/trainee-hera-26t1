@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { DriverPassengerSwitch } from "@/components/driver-passenger-switch";
+import { DriverSeatsForm } from "@/components/driver-seats-form";
 import { LeaveTripPanel } from "@/components/leave-trip-panel";
 import { ParticipantPinForm } from "@/components/participant-pin-form";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
@@ -9,6 +13,8 @@ type PersonalInfoPanelProps = {
 };
 
 export function PersonalInfoPanel({ onPinSaved }: PersonalInfoPanelProps) {
+  const [isDriver, setIsDriver] = useState(false);
+
   return (
     <div className="flex flex-col gap-4">
       <div className={dashboardSectionClass}>
@@ -16,7 +22,12 @@ export function PersonalInfoPanel({ onPinSaved }: PersonalInfoPanelProps) {
       </div>
 
       <div className={dashboardSectionClass}>
-        <DriverPassengerSwitch />
+        <DriverPassengerSwitch onRoleChange={setIsDriver} />
+        {isDriver && (
+          <div className="mt-4 border-t border-atlas-teal/10 pt-4">
+            <DriverSeatsForm isDriver={isDriver} />
+          </div>
+        )}
       </div>
 
       <div className={`${dashboardSectionClass} !p-0`}>

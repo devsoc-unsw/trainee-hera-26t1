@@ -28,7 +28,11 @@ type DrivingGroup = {
   }[];
 };
 
-export function DrivingGroupsPanel() {
+type DrivingGroupsPanelProps = {
+  onGroupsFormed?: () => void;
+};
+
+export function DrivingGroupsPanel({ onGroupsFormed }: DrivingGroupsPanelProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -122,9 +126,9 @@ export function DrivingGroupsPanel() {
       if (!saveRes.ok) throw new Error(saveData.error || "Failed to save groups");
 
       setMessage(`Success: created ${saveData.groups_created} groups`);
-      
-      // Refresh groups list
+
       await fetchGroups(tripId);
+      onGroupsFormed?.();
     } catch (err: unknown) {
       setMessage(err instanceof Error ? err.message : String(err));
     } finally {

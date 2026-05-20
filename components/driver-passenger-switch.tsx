@@ -5,7 +5,13 @@ import { readApiError } from "@/lib/api-error";
 import { getTripSession } from "@/lib/trip-session";
 import type { TripParticipant } from "@/types/database";
 
-export function DriverPassengerSwitch() {
+type DriverPassengerSwitchProps = {
+  onRoleChange?: (isDriver: boolean) => void;
+};
+
+export function DriverPassengerSwitch({
+  onRoleChange,
+}: DriverPassengerSwitchProps) {
   const [participant, setParticipant] = useState<TripParticipant | null>(null);
   const [isDriver, setIsDriver] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +50,7 @@ export function DriverPassengerSwitch() {
       const json = (await res.json()) as { participant: TripParticipant };
       setParticipant(json.participant);
       setIsDriver(json.participant.is_driver);
+      onRoleChange?.(json.participant.is_driver);
     } catch {
       setError("Could not load your role");
     } finally {
@@ -64,6 +71,7 @@ export function DriverPassengerSwitch() {
     // Optimistic: flip the visual state immediately so the toggle feels
     // instant. We'll revert below if the server rejects the change.
     setIsDriver(nextIsDriver);
+    onRoleChange?.(nextIsDriver);
     setError(null);
     savingRef.current = true;
 
@@ -81,6 +89,7 @@ export function DriverPassengerSwitch() {
       if (!res.ok) {
         // Revert to the previous value on server-side failure.
         setIsDriver(previousIsDriver);
+        onRoleChange?.(previousIsDriver);
         setError(await readApiError(res, "Could not update role"));
         return;
       }
@@ -90,9 +99,11 @@ export function DriverPassengerSwitch() {
       // Reconcile with server truth in case it differs from our optimistic
       // guess (e.g. another tab changed it concurrently).
       setIsDriver(json.participant.is_driver);
+      onRoleChange?.(json.participant.is_driver);
     } catch {
       // Network error — revert to the previous value.
       setIsDriver(previousIsDriver);
+      onRoleChange?.(previousIsDriver);
       setError("Could not update role");
     } finally {
       savingRef.current = false;

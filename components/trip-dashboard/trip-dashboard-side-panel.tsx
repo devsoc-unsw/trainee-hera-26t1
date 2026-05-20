@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Info, User, Users, UsersRound } from "lucide-react";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { DashboardNavTab } from "@/components/trip-dashboard/dashboard-ui";
@@ -17,11 +17,12 @@ import type { RoleFilter, SidebarTab } from "@/components/trip-dashboard/types";
 import { useTripDashboardData } from "@/components/trip-dashboard/use-trip-dashboard-data";
 
 export function TripDashboardSidePanel({
-  onPinSaved,
+  onDataChange,
   focusUsername,
   onMemberFocus,
 }: {
-  onPinSaved?: () => void;
+  /** Bumps map + refetches sidebar trip data (members, groups, etc.). */
+  onDataChange?: () => void;
   focusUsername?: string | null;
   onMemberFocus?: (username: string) => void;
 }) {
@@ -29,6 +30,11 @@ export function TripDashboardSidePanel({
     useTripDashboardData();
   const [activeTab, setActiveTab] = useState<SidebarTab>("trip-info");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+
+  const invalidateTripData = useCallback(() => {
+    void refresh();
+    onDataChange?.();
+  }, [refresh, onDataChange]);
 
   const filteredMembers = useMemo(
     () => filterMembers(sortMembers(members), roleFilter),
@@ -95,14 +101,11 @@ export function TripDashboardSidePanel({
             me={me}
             isLoading={isLoading}
             memberCount={members.length}
-            onTripUpdated={() => {
-              void refresh();
-              onPinSaved?.();
-            }}
+            onTripUpdated={invalidateTripData}
           />
         )}
         {activeTab === "personal" && (
-          <PersonalInfoPanel onPinSaved={onPinSaved} />
+          <PersonalInfoPanel onPinSaved={invalidateTripData} />
         )}
         {activeTab === "members" && (
           <MembersPanel
@@ -118,13 +121,15 @@ export function TripDashboardSidePanel({
             tripCode={trip?.trip_code ?? undefined}
             allMembers={members}
             currentUsername={me?.username}
-            onMemberAdded={refresh}
-            onMemberRemoved={refresh}
+            onMemberAdded={invalidateTripData}
+            onMemberRemoved={invalidateTripData}
             focusUsername={focusUsername}
             onMemberFocus={onMemberFocus}
           />
         )}
-        {activeTab === "groups" && <DrivingGroupsPanel />}
+        {activeTab === "groups" && (
+          <DrivingGroupsPanel onGroupsFormed={invalidateTripData} />
+        )}
       </div>
     </div>
   );
