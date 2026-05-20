@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { readApiError } from "@/lib/api-error";
 import { getTripSession } from "@/lib/trip-session";
 import type { TripParticipant } from "@/types/database";
@@ -9,8 +9,11 @@ export function DriverPassengerSwitch() {
   const [participant, setParticipant] = useState<TripParticipant | null>(null);
   const [isDriver, setIsDriver] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // In-flight lock so two rapid clicks don't race. Ref (not state) because we
+  // don't want any visual "saving" feedback — the toggle should feel instant.
+  const savingRef = useRef(false);
 
   const session = getTripSession();
   const username = session?.username;
@@ -53,11 +56,16 @@ export function DriverPassengerSwitch() {
   }, [loadParticipant]);
 
   const onToggle = async () => {
-    if (!username || !tripId || isSaving) return;
+    if (!username || !tripId || savingRef.current) return;
 
+    const previousIsDriver = isDriver;
     const nextIsDriver = !isDriver;
-    setIsSaving(true);
+
+    // Optimistic: flip the visual state immediately so the toggle feels
+    // instant. We'll revert below if the server rejects the change.
+    setIsDriver(nextIsDriver);
     setError(null);
+    savingRef.current = true;
 
     try {
       const res = await fetch("/api/participants/update-role", {
@@ -71,17 +79,23 @@ export function DriverPassengerSwitch() {
       });
 
       if (!res.ok) {
+        // Revert to the previous value on server-side failure.
+        setIsDriver(previousIsDriver);
         setError(await readApiError(res, "Could not update role"));
         return;
       }
 
       const json = (await res.json()) as { participant: TripParticipant };
       setParticipant(json.participant);
+      // Reconcile with server truth in case it differs from our optimistic
+      // guess (e.g. another tab changed it concurrently).
       setIsDriver(json.participant.is_driver);
     } catch {
+      // Network error — revert to the previous value.
+      setIsDriver(previousIsDriver);
       setError("Could not update role");
     } finally {
-      setIsSaving(false);
+      savingRef.current = false;
     }
   };
 
@@ -120,14 +134,13 @@ export function DriverPassengerSwitch() {
           role="switch"
           aria-checked={isDriver}
           aria-label={isDriver ? "Switch to passenger" : "Switch to driver"}
-          disabled={isSaving}
           onClick={onToggle}
-          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
+          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors duration-200 ${
             isDriver ? "bg-atlas-teal" : "bg-slate-300"
           }`}
         >
           <span
-            className={`absolute top-1 size-6 rounded-full bg-white shadow transition-transform ${
+            className={`absolute top-1 size-6 rounded-full bg-white shadow transition-transform duration-200 ${
               isDriver ? "left-7" : "left-1"
             }`}
           />
