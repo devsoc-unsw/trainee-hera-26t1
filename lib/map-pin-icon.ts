@@ -79,21 +79,17 @@ function destinationPinSvg(): string {
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
-    <radialGradient id="goldGrad" cx="35%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#fff3e0" stop-opacity="0.9"/>
-      <stop offset="60%" stop-color="${DESTINATION_GOLD}" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#b45309" stop-opacity="1"/>
-    </radialGradient>
+    <!-- plain gold fill (no gloss) -->
   </defs>
   <ellipse cx="24" cy="57" rx="10" ry="2.5" fill="#0f172a" opacity="0.16"/>
   <g filter="url(#shadow)">
     <path d="M24 4c-8.84 0-16 7.16-16 16 0 11.2 16 32 16 32s16-20.8 16-32c0-8.84-7.16-16-16-16z"
-      fill="url(#goldGrad)" stroke="rgba(255,255,255,0.12)" stroke-width="1.6" stroke-linejoin="round"/>
+      fill="${DESTINATION_GOLD}" stroke="rgba(255,255,255,0.12)" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M24 4c-8.84 0-16 7.16-16 16 0 11.2 16 32 16 32s16-20.8 16-32c0-8.84-7.16-16-16-16z"
       fill="none" stroke="#0f172a" stroke-width="0.9" stroke-opacity="0.32" stroke-linejoin="round"/>
   </g>
   <polygon points="24,11 26.6,17.8 33.8,18.2 28.2,22.6 30,29.4 24,25.6 18,29.4 19.8,22.6 14.2,18.2 21.4,17.8"
-    fill="#ffffff" stroke="#92400e" stroke-width="0.6" stroke-linejoin="round"/>
+    fill="#ffffff" stroke="none" stroke-linejoin="round"/>
 </svg>`;
 }
 
