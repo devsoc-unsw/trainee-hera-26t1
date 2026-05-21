@@ -1,6 +1,7 @@
 import { Car } from "lucide-react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { AdminAddUser } from "@/components/trip-dashboard/admin-add-user";
+import { AdminPromoteUser } from "@/components/trip-dashboard/admin-promote-user";
 import { AdminRemoveUser } from "@/components/trip-dashboard/admin-remove-user";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import {
@@ -29,6 +30,7 @@ type MembersPanelProps = {
   currentUsername?: string;
   onMemberAdded?: () => void;
   onMemberRemoved?: () => void;
+  onMemberPromoted?: () => void;
   selectedUsername?: string | null;
   onMemberSelect?: (username: string) => void;
 };
@@ -48,6 +50,7 @@ export function MembersPanel({
   currentUsername,
   onMemberAdded,
   onMemberRemoved,
+  onMemberPromoted,
   selectedUsername,
   onMemberSelect,
 }: MembersPanelProps) {
@@ -117,6 +120,15 @@ export function MembersPanel({
           tripId={tripId}
           tripCode={tripCode}
           onAdded={onMemberAdded}
+        />
+      )}
+
+      {isAdmin && tripId && allMembers && currentUsername && (
+        <AdminPromoteUser
+          tripId={tripId}
+          members={allMembers}
+          currentUsername={currentUsername}
+          onPromoted={onMemberPromoted}
         />
       )}
 

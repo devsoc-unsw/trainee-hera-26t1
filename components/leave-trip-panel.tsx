@@ -7,17 +7,28 @@ import { readApiError } from "@/lib/api-error";
 
 type Step = "idle" | "confirming" | "loading" | "success";
 
+type LeaveTripPanelProps = {
+  isAdmin?: boolean;
+  adminCount?: number;
+};
+
 /**
  * Dashboard sidebar panel — lets a participant leave the current trip.
- * Reads the active trip session from localStorage and calls
- * DELETE /api/participants/leave-trip.
+ * Sole admins must promote another member on the People tab before leaving.
  */
-export function LeaveTripPanel() {
+export function LeaveTripPanel({
+  isAdmin = false,
+  adminCount = 0,
+}: LeaveTripPanelProps) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
 
+  const isSoleAdmin = isAdmin && adminCount <= 1;
+
   const handleLeave = async () => {
+    if (isSoleAdmin) return;
+
     setStep("loading");
     setError(null);
 
@@ -48,7 +59,6 @@ export function LeaveTripPanel() {
       clearTripSession();
       setStep("success");
 
-      // Redirect to home after a short pause so the user sees the success message.
       setTimeout(() => router.push("/"), 1500);
     } catch {
       setError("Network error. Please try again.");
@@ -76,8 +86,20 @@ export function LeaveTripPanel() {
         </p>
       </div>
 
-      {step === "idle" && (
+      {isSoleAdmin && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">You are the only admin</p>
+          <p className="mt-1 text-amber-800">
+            Promote another member to admin on the{" "}
+            <span className="font-semibold">People</span> tab before you can
+            leave this trip.
+          </p>
+        </div>
+      )}
+
+      {step === "idle" && !isSoleAdmin && (
         <button
+          type="button"
           onClick={() => setStep("confirming")}
           className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
         >
@@ -85,7 +107,7 @@ export function LeaveTripPanel() {
         </button>
       )}
 
-      {step === "confirming" && (
+      {step === "confirming" && !isSoleAdmin && (
         <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
           <p className="text-sm font-medium text-red-700">
             Are you sure you want to leave this trip?
@@ -95,13 +117,18 @@ export function LeaveTripPanel() {
           )}
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleLeave}
               className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
             >
               Yes, leave
             </button>
             <button
-              onClick={() => { setStep("idle"); setError(null); }}
+              type="button"
+              onClick={() => {
+                setStep("idle");
+                setError(null);
+              }}
               className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
             >
               Cancel
@@ -110,7 +137,7 @@ export function LeaveTripPanel() {
         </div>
       )}
 
-      {step === "loading" && (
+      {step === "loading" && !isSoleAdmin && (
         <p className="text-sm text-slate-500">Leaving trip…</p>
       )}
     </div>

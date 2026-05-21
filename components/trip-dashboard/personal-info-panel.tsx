@@ -10,9 +10,15 @@ import { UpdatePasswordPanel } from "@/components/update-password-panel";
 
 type PersonalInfoPanelProps = {
   onPinSaved?: () => void;
+  isAdmin?: boolean;
+  adminCount?: number;
 };
 
-export function PersonalInfoPanel({ onPinSaved }: PersonalInfoPanelProps) {
+export function PersonalInfoPanel({
+  onPinSaved,
+  isAdmin = false,
+  adminCount = 0,
+}: PersonalInfoPanelProps) {
   const [isDriver, setIsDriver] = useState(false);
 
   return (
@@ -35,7 +41,7 @@ export function PersonalInfoPanel({ onPinSaved }: PersonalInfoPanelProps) {
       </div>
 
       <div className={`${dashboardSectionClass} !p-0`}>
-        <LeaveTripPanel />
+        <LeaveTripPanel isAdmin={isAdmin} adminCount={adminCount} />
       </div>
     </div>
   );
