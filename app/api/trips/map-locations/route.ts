@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { buildGroupColorById } from "@/lib/driving-group-colors";
 import { createClient } from "@/lib/supabase/server";
-import type { Location } from "@/types/database";
-
-export type TripMapLocation = Pick<
-  Location,
-  "id" | "address" | "latitude" | "longitude" | "name"
->;
+export type TripMapLocation = {
+  id: string;
+  name: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
 
 export type TripMapParticipant = {
   username: string;
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
     ),
   ];
 
-  const locationsById = new Map<string, Location>();
+  const locationsById = new Map<string, TripMapLocation>();
 
   if (locationIds.length > 0) {
     const { data: locations, error: locationsError } = await supabase

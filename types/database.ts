@@ -30,6 +30,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      location_images: {
+        Row: {
+          id: string;
+          location_id: string;
+          storage_path: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          location_id: string;
+          storage_path: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          location_id?: string;
+          storage_path?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       locations: {
         Row: {
           id: string;
@@ -37,6 +61,7 @@ export type Database = {
           address: string | null;
           latitude: number | null;
           longitude: number | null;
+          airbnb_url: string | null;
         };
         Insert: {
           id?: string;
@@ -44,6 +69,7 @@ export type Database = {
           address?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          airbnb_url?: string | null;
         };
         Update: {
           id?: string;
@@ -51,6 +77,7 @@ export type Database = {
           address?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          airbnb_url?: string | null;
         };
         Relationships: [];
       };
@@ -135,6 +162,7 @@ export type TablesUpdate<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Update"];
 
 export type DrivingGroup = Tables<"driving_groups">;
+export type LocationImage = Tables<"location_images">;
 export type Location = Tables<"locations">;
 export type TripParticipant = Tables<"trip_participants">;
 export type Trip = Tables<"trips">;

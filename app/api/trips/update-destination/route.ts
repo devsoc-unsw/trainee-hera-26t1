@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { normalizeAirbnbUrl } from "@/lib/airbnb-url";
 import { createClient } from "@/lib/supabase/server";
 import type { LocationInsert } from "@/types/database";
 
@@ -7,6 +8,7 @@ type UpdateDestinationBody = {
   address?: string;
   latitude?: number;
   longitude?: number;
+  airbnb_url?: string | null;
 };
 
 // TODO(server-auth): this route does not verify the caller is an admin of the
@@ -44,6 +46,23 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
+  let airbnb_url: string | null = null;
+  if ("airbnb_url" in body) {
+    if (body.airbnb_url === null || body.airbnb_url === "") {
+      airbnb_url = null;
+    } else {
+      airbnb_url = normalizeAirbnbUrl(body.airbnb_url);
+      if (airbnb_url === null) {
+        return NextResponse.json(
+          {
+            error: "Invalid Airbnb URL. Use a https://airbnb.com/... link.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
   const supabase = await createClient();
 
   // 1. Insert the new destination into the `locations` table. We always insert
@@ -56,12 +75,13 @@ export async function PATCH(req: NextRequest) {
     address,
     latitude,
     longitude,
+    airbnb_url,
   };
 
   const { data: insertedLocation, error: locationError } = await supabase
     .from("locations")
     .insert(locationRow)
-    .select("id")
+    .select("id, name, address, latitude, longitude, airbnb_url")
     .single();
 
   if (locationError) {
@@ -137,5 +157,8 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ trip: updatedTrip });
+  return NextResponse.json({
+    trip: updatedTrip,
+    destination: insertedLocation,
+  });
 }

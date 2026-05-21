@@ -1,5 +1,6 @@
-import { MapPin } from "lucide-react";
+import { ExternalLink, MapPin } from "lucide-react";
 import { AdminUpdateDestination } from "@/components/trip-dashboard/admin-update-destination";
+import { DestinationImageGallery } from "@/components/trip-dashboard/destination-image-gallery";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import { DashboardSectionHeading } from "@/components/trip-dashboard/dashboard-ui";
 import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
@@ -24,6 +25,8 @@ export function TripInfoPanel({
   onDestinationFocus,
 }: TripInfoPanelProps) {
   const destinationAddress = trip?.destination?.address?.trim();
+  const airbnbUrl = trip?.destination?.airbnb_url?.trim();
+  const destinationImages = trip?.destination?.images ?? [];
   const canShowDestinationOnMap =
     !!destinationAddress &&
     hasMapCoords(trip?.destination) &&
@@ -70,6 +73,24 @@ export function TripInfoPanel({
                   destinationAddress || "Not set"
                 )}
               </dd>
+              {airbnbUrl && (
+                <dd className="mt-1.5">
+                  <a
+                    href={airbnbUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-atlas-teal underline decoration-atlas-teal/30 underline-offset-2 hover:text-atlas-teal-hover"
+                  >
+                    View on Airbnb
+                    <ExternalLink className="size-3.5" aria-hidden />
+                  </a>
+                </dd>
+              )}
+              {destinationImages.length > 0 && (
+                <dd className="mt-2">
+                  <DestinationImageGallery images={destinationImages} />
+                </dd>
+              )}
             </div>
           </div>
           <div>
@@ -102,6 +123,9 @@ export function TripInfoPanel({
         <AdminUpdateDestination
           tripId={trip.id}
           currentAddress={trip.destination?.address ?? null}
+          currentLocationId={trip.destination?.id ?? null}
+          currentAirbnbUrl={trip.destination?.airbnb_url ?? null}
+          currentImages={trip.destination?.images ?? []}
           onUpdated={onTripUpdated}
         />
       )}
