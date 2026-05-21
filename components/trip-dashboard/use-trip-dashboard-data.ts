@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { readApiError } from "@/lib/api-error";
 import { getTripSession, type TripSession } from "@/lib/trip-session";
+import type { DestinationImageView } from "@/lib/destination-images";
 import type { Location, Trip, TripParticipant } from "@/types/database";
 
 // Trip data with the resolved destination row joined in. `location` is the
@@ -11,8 +12,10 @@ import type { Location, Trip, TripParticipant } from "@/types/database";
 // readable place — null when the trip has no destination set yet.
 export type TripDestination = Pick<
   Location,
-  "id" | "name" | "address" | "latitude" | "longitude"
->;
+  "id" | "name" | "address" | "latitude" | "longitude" | "airbnb_url"
+> & {
+  images: DestinationImageView[];
+};
 
 export type TripSummary = Pick<
   Trip,
