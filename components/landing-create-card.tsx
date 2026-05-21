@@ -21,8 +21,7 @@ export function LandingCreateCard({ cardClassName }: LandingCreateCardProps) {
           Create a New Trip
         </h2>
         <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600 sm:text-[0.95rem]">
-          Design your dream coastal route. Pick stops, invite buddies, and sync
-          your favorite soundtracks.
+          Coordinate your trip route. Pick stops, invite buddies, and organise your carpools.
         </p>
         <button
           type="button"
