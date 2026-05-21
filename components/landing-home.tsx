@@ -17,7 +17,7 @@ export function LandingHome() {
         <main className="flex w-full flex-1 flex-col items-center justify-center gap-8 px-4 py-10 sm:gap-10 sm:px-6 md:py-12">
           <div className="mx-auto w-full max-w-3xl text-center">
             <h1 className="text-balance font-semibold leading-[1.1] tracking-tight text-atlas-teal text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem]">
-              Set your pace. Map your journey.
+              road trips made easy.
             </h1>
           </div>
 
