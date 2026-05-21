@@ -162,6 +162,7 @@ export function TripDashboardSidePanel({
           <div className={activeTab === "groups" ? "" : "hidden"}>
             <DrivingGroupsPanel
               tripId={trip.id}
+              destination={trip.destination}
               isAdmin={me?.is_admin ?? false}
               layout={groupsLayout}
               layoutVersion={groupsVersion}

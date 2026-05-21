@@ -33,13 +33,15 @@ export function DashboardNavTab({
 export function DashboardSectionHeading({
   title,
   description,
+  className,
 }: {
   title: string;
   description?: string;
+  className?: string;
 }) {
   return (
-    <div className="mb-4">
-      <h3 className="text-sm font-semibold tracking-tight text-atlas-teal">
+    <div className={className ?? (description ? "mb-4" : "mb-0")}>
+      <h3 className="text-lg font-semibold tracking-tight text-atlas-teal">
         {title}
       </h3>
       {description && (

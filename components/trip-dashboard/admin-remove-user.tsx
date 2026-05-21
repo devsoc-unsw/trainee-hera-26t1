@@ -93,10 +93,6 @@ export function AdminRemoveUser({
           <UserMinus className="size-5" strokeWidth={2.25} aria-hidden />
           Remove a member
         </h3>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">
-          Pick someone to take off this trip. This can&apos;t be undone — they
-          can rejoin with the trip code.
-        </p>
       </div>
 
       {removableMembers.length === 0 ? (

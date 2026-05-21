@@ -7,8 +7,9 @@ import { DrivingGroupsEditor } from "@/components/trip-dashboard/driving-groups-
 import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
 import type { TripSummary } from "@/components/trip-dashboard/use-trip-dashboard-data";
 import type { DraftLayout } from "@/lib/driving-group-draft";
-import { Button } from "@/components/ui/button";
 import { getTripSession } from "@/lib/trip-session";
+
+type TripDestination = TripSummary["destination"];
 
 type ParticipantLocation = {
   id: string;
@@ -20,6 +21,7 @@ type ParticipantLocation = {
 
 type DrivingGroupsPanelProps = {
   tripId: string;
+  destination?: TripDestination | null;
   isAdmin?: boolean;
   layout: DraftLayout | null;
   layoutVersion: number;
@@ -30,6 +32,7 @@ type DrivingGroupsPanelProps = {
 
 export function DrivingGroupsPanel({
   tripId,
+  destination = null,
   isAdmin = false,
   layout,
   layoutVersion,
@@ -39,6 +42,7 @@ export function DrivingGroupsPanel({
 }: DrivingGroupsPanelProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const hasDestination = hasMapCoords(destination);
 
   async function handleFormGroups() {
     setLoading(true);
@@ -134,29 +138,34 @@ export function DrivingGroupsPanel({
 
   return (
     <div className={dashboardSectionClass}>
-      <DashboardSectionHeading title="Driving groups" />
+      <DashboardSectionHeading title="Driving groups" className="mb-2" />
       {isAdmin && (
-        <div className="mb-3 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <Button onClick={handleFormGroups} disabled={loading}>
-              {loading ? "Forming…" : "Form groups"}
-            </Button>
-            {message && (
-              <p
-                className={`text-xs ${
-                  message.startsWith("Success:")
-                    ? "text-emerald-600"
-                    : "text-rose-600"
-                }`}
-              >
-                {message.startsWith("Success:") ? "success" : `error: ${message}`}
-              </p>
-            )}
-          </div>
-          <p className="text-xs text-slate-500">
-            Requires a trip destination. Routes are optimized toward that
-            location.
-          </p>
+        <div className="mb-2.5 flex flex-col items-center gap-2 px-4 py-2.5 text-center">
+          <button
+            type="button"
+            onClick={handleFormGroups}
+            disabled={loading || !hasDestination}
+            className="rounded-2xl bg-atlas-teal px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-atlas-teal-hover disabled:opacity-60"
+          >
+            {loading ? "Forming…" : "Form groups"}
+          </button>
+          {!hasDestination && (
+            <p className="max-w-sm text-sm text-red-600" role="alert">
+              Set a trip destination on the Trip info tab before forming groups.
+            </p>
+          )}
+          {message && (
+            <p
+              className={`max-w-sm text-sm ${
+                message.startsWith("Success:")
+                  ? "text-emerald-600"
+                  : "text-red-600"
+              }`}
+              role="alert"
+            >
+              {message}
+            </p>
+          )}
         </div>
       )}
 

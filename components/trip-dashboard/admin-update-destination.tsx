@@ -229,11 +229,6 @@ export function AdminUpdateDestination({
           <MapPin className="size-5" strokeWidth={2.25} aria-hidden />
           {hasCurrentDestination ? "Update destination" : "Set destination"}
         </h3>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">
-          {hasCurrentDestination
-            ? "Change where this trip is heading, or add an optional Airbnb link and photos. Updating the address resets driving groups."
-            : "Set a destination so members can be grouped together. You can optionally add an Airbnb link and photos."}
-        </p>
       </div>
 
       <label className="flex flex-col gap-1.5" htmlFor="destination-input">
