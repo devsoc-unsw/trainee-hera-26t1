@@ -136,7 +136,9 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h3 className="text-sm font-semibold text-atlas-teal">Your location</h3>
+        <h3 className="text-lg font-semibold tracking-tight text-atlas-teal">
+          Your location
+        </h3>
         <p className="mt-1 text-xs text-slate-600">
           {hasSavedLocation
             ? "Your saved address on this trip."

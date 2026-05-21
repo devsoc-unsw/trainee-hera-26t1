@@ -44,11 +44,8 @@ export function TripInfoPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={`${dashboardSectionClass} flex flex-col gap-4`}>
-        <DashboardSectionHeading
-          title="Trip information"
-          description="Overview of this trip for all participants."
-        />
+      <div className={dashboardSectionClass}>
+        <DashboardSectionHeading title="Trip information" className="mb-0" />
         <dl className="flex flex-col gap-3 text-sm">
           <div className="flex gap-3">
             <MapPin

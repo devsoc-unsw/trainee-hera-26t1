@@ -109,11 +109,6 @@ export function AdminAddUser({
           <UserPlus className="size-5" strokeWidth={2.25} aria-hidden />
           Invite a member
         </h3>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">
-          Add someone by username. Optionally set their map pin now. You&apos;ll
-          get an invite link to share — opening it signs them into this trip
-          automatically.
-        </p>
       </div>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-3">

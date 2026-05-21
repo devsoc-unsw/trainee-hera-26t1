@@ -94,10 +94,6 @@ export function AdminPromoteUser({
           <Crown className="size-5" strokeWidth={2.25} aria-hidden />
           Make someone an admin
         </h3>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">
-          Admins can manage the destination, members, and driving groups. At
-          least one admin must stay on the trip.
-        </p>
       </div>
 
       {promotableMembers.length === 0 ? (
