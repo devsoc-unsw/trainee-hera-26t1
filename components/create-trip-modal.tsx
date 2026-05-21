@@ -11,7 +11,7 @@ const inputClassName =
   "w-full rounded-2xl border border-white/55 bg-white/70 px-4 py-3 text-sm text-slate-800 shadow-inner outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2";
 
 const panelClassName =
-  "relative w-full max-w-md rounded-3xl border border-white/45 bg-white/40 p-7 shadow-[0_20px_50px_-12px_rgba(12,61,63,0.2)] backdrop-blur-md sm:p-8";
+  "relative w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-7 shadow-[0_20px_50px_-12px_rgba(12,61,63,0.2)] backdrop-blur-md sm:p-8";
 
 type CreateTripResponse = { trip: Trip };
 
@@ -115,7 +115,7 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-atlas-teal/30 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-atlas-teal/60 p-4 backdrop-blur-sm"
       role="presentation"
       onClick={onClose}
     >
