@@ -6,7 +6,16 @@ create table public.locations (
   name text,
   address text,
   latitude double precision,
-  longitude double precision
+  longitude double precision,
+  airbnb_url text
+);
+
+create table public.location_images (
+  id uuid primary key default gen_random_uuid(),
+  location_id uuid not null references public.locations (id) on delete cascade,
+  storage_path text not null,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
 );
 
 create table public.trips (
