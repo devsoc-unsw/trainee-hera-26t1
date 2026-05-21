@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "You are the only admin on this trip. Transfer admin to another member before leaving.",
+            "This trip must keep at least one admin. Promote another member on the People tab before leaving or removing them.",
         },
         { status: 403 },
       );

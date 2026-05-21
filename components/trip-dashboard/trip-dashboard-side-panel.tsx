@@ -55,6 +55,7 @@ export function TripDashboardSidePanel({
 
   const driverCount = members.filter((m) => m.is_driver).length;
   const passengerCount = members.length - driverCount;
+  const adminCount = members.filter((m) => m.is_admin).length;
 
   const {
     layout: groupsLayout,
@@ -130,7 +131,11 @@ export function TripDashboardSidePanel({
           />
         </div>
         <div className={activeTab === "personal" ? "" : "hidden"}>
-          <PersonalInfoPanel onPinSaved={handleDataChange} />
+          <PersonalInfoPanel
+            onPinSaved={handleDataChange}
+            isAdmin={me?.is_admin ?? false}
+            adminCount={adminCount}
+          />
         </div>
         <div className={activeTab === "members" ? "" : "hidden"}>
           <MembersPanel
@@ -148,6 +153,7 @@ export function TripDashboardSidePanel({
             currentUsername={me?.username}
             onMemberAdded={handleDataChange}
             onMemberRemoved={handleDataChange}
+            onMemberPromoted={handleDataChange}
             selectedUsername={selectedUsername}
             onMemberSelect={onMemberSelect}
           />
