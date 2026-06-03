@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { MemberGroupAssign } from "@/components/trip-dashboard/member-group-assign";
+import { AdminDriverSeatsForm } from "@/components/trip-dashboard/admin-driver-seats-form";
 import { PlacesAutocompleteInput } from "@/components/places-autocomplete-input";
 import { readApiError } from "@/lib/api-error";
 import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
@@ -147,6 +148,21 @@ export function MemberDetailPopup({
             member={member}
             tripId={tripId}
             onUpdated={onUpdated}
+          />
+        </div>
+      )}
+
+      {isAdmin && member.is_driver && (
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          <p className="mb-2 text-xs font-medium text-atlas-teal">
+            Update seats (admin)
+          </p>
+          <AdminDriverSeatsForm
+            tripId={tripId}
+            username={member.username}
+            initialSeats={member.seats}
+            onSaved={onUpdated}
+            inputClassName={inputClassName}
           />
         </div>
       )}

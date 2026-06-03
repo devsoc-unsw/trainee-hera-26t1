@@ -3,6 +3,7 @@ import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { AdminAddUser } from "@/components/trip-dashboard/admin-add-user";
 import { AdminPromoteUser } from "@/components/trip-dashboard/admin-promote-user";
 import { AdminRemoveUser } from "@/components/trip-dashboard/admin-remove-user";
+import { AdminUpdateDriverSeats } from "@/components/trip-dashboard/admin-update-driver-seats";
 import { dashboardSectionClass } from "@/components/trip-dashboard/constants";
 import {
   DashboardFilterChip,
@@ -31,6 +32,7 @@ type MembersPanelProps = {
   onMemberAdded?: () => void;
   onMemberRemoved?: () => void;
   onMemberPromoted?: () => void;
+  onMemberUpdated?: () => void;
   selectedUsername?: string | null;
   onMemberSelect?: (username: string) => void;
 };
@@ -51,6 +53,7 @@ export function MembersPanel({
   onMemberAdded,
   onMemberRemoved,
   onMemberPromoted,
+  onMemberUpdated,
   selectedUsername,
   onMemberSelect,
 }: MembersPanelProps) {
@@ -129,6 +132,14 @@ export function MembersPanel({
           members={allMembers}
           currentUsername={currentUsername}
           onPromoted={onMemberPromoted}
+        />
+      )}
+
+      {isAdmin && tripId && allMembers && (
+        <AdminUpdateDriverSeats
+          tripId={tripId}
+          members={allMembers}
+          onUpdated={onMemberUpdated}
         />
       )}
 

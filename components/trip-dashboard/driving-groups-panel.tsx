@@ -7,6 +7,7 @@ import { DrivingGroupsEditor } from "@/components/trip-dashboard/driving-groups-
 import { hasMapCoords } from "@/components/trip-dashboard/member-utils";
 import type { TripSummary } from "@/components/trip-dashboard/use-trip-dashboard-data";
 import type { DraftLayout } from "@/lib/driving-group-draft";
+import { SOLVER_CAPACITY_ERROR_MESSAGE } from "@/lib/solver-error";
 import { getTripSession } from "@/lib/trip-session";
 
 type TripDestination = TripSummary["destination"];
@@ -112,7 +113,7 @@ export function DrivingGroupsPanel({
         }),
       });
       const solveData = await solveRes.json();
-      if (!solveRes.ok) throw new Error(solveData.error || "Solver error");
+      if (!solveRes.ok) throw new Error(SOLVER_CAPACITY_ERROR_MESSAGE);
 
       const routes: string[][] = solveData.routes;
 

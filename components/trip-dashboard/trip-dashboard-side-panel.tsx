@@ -154,6 +154,7 @@ export function TripDashboardSidePanel({
             onMemberAdded={handleDataChange}
             onMemberRemoved={handleDataChange}
             onMemberPromoted={handleDataChange}
+            onMemberUpdated={handleDataChange}
             selectedUsername={selectedUsername}
             onMemberSelect={onMemberSelect}
           />

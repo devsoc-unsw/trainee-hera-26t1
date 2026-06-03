@@ -9,6 +9,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { SOLVER_CAPACITY_ERROR_MESSAGE } from "@/lib/solver-error";
 
 export type LocationData = {
   id: string;
@@ -51,7 +52,7 @@ export function useRoadtripSolver() {
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.error ?? `HTTP ${res.status}`);
+          throw new Error(SOLVER_CAPACITY_ERROR_MESSAGE);
         }
 
         setRoutes(data.routes);
