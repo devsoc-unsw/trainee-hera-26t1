@@ -8,6 +8,8 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import type { TripParticipantInsert } from "@/types/database";
 
+const MAX_SEATS = 15;
+
 type AddParticipantBody = {
   username?: string;
   trip_id?: string;
@@ -110,18 +112,37 @@ export async function POST(req: NextRequest) {
     locationId = createdLocation.locationId;
   }
 
+  const isDriver = body.is_driver === true;
+  let seats: number | null = null;
+
+  if (isDriver && typeof body.seats === "number") {
+    if (!Number.isInteger(body.seats)) {
+      return NextResponse.json(
+        { error: "seats must be a whole number" },
+        { status: 400 },
+      );
+    }
+    if (body.seats < 0 || body.seats > MAX_SEATS) {
+      return NextResponse.json(
+        { error: `seats must be between 0 and ${MAX_SEATS}` },
+        { status: 400 },
+      );
+    }
+    seats = body.seats;
+  }
+
   const row: TripParticipantInsert = {
     username,
     trip_id: resolved.tripId,
     password_hash,
-    is_driver: body.is_driver === true,
+    is_driver: isDriver,
     is_admin: body.is_admin === true,
     group_id:
       typeof body.group_id === "string" && body.group_id.trim()
         ? body.group_id.trim()
         : null,
     location: locationId,
-    seats: typeof body.seats === "number" ? body.seats : null,
+    seats,
   };
 
   const { data, error } = await supabase

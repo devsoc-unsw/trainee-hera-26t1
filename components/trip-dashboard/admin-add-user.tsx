@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 const inputClassName =
   "rounded-2xl border border-atlas-teal/20 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2";
 
+const MAX_SEATS = 15;
+
 type AdminAddUserProps = {
   tripId: string;
   tripCode: string;
@@ -33,6 +35,7 @@ export function AdminAddUser({
   const [username, setUsername] = useState("");
   const [pin, setPin] = useState<PinSelection | null>(null);
   const [isDriver, setIsDriver] = useState(false);
+  const [seatsInput, setSeatsInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
@@ -47,6 +50,21 @@ export function AdminAddUser({
       return;
     }
 
+    let seats: number | undefined;
+    if (isDriver) {
+      const parsed = Number.parseInt(seatsInput, 10);
+      if (
+        seatsInput === "" ||
+        !Number.isInteger(parsed) ||
+        parsed < 0 ||
+        parsed > MAX_SEATS
+      ) {
+        setError(`Enter passenger seats (0–${MAX_SEATS})`);
+        return;
+      }
+      seats = parsed;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -58,6 +76,7 @@ export function AdminAddUser({
           username: trimmed,
           trip_id: tripId,
           is_driver: isDriver,
+          ...(isDriver && seats !== undefined ? { seats } : {}),
           ...(isValidPin(pin)
             ? {
                 address: pin.address,
@@ -82,6 +101,7 @@ export function AdminAddUser({
       setUsername("");
       setPin(null);
       setIsDriver(false);
+      setSeatsInput("");
       onAdded?.();
     } catch {
       setError("Could not reach the server. Try again.");
@@ -152,12 +172,46 @@ export function AdminAddUser({
           <input
             type="checkbox"
             checked={isDriver}
-            onChange={(e) => setIsDriver(e.target.checked)}
+            onChange={(e) => {
+              setIsDriver(e.target.checked);
+              if (!e.target.checked) {
+                setSeatsInput("");
+              }
+              setError(null);
+            }}
             disabled={isSubmitting}
             className="size-4 rounded border-atlas-teal/30 accent-atlas-teal"
           />
           Mark as driver
         </label>
+
+        {isDriver && (
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-atlas-teal">
+              Passenger seats
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={MAX_SEATS}
+              step={1}
+              inputMode="numeric"
+              value={seatsInput}
+              onChange={(e) => {
+                setSeatsInput(e.target.value);
+                setError(null);
+              }}
+              placeholder="e.g. 3"
+              className={inputClassName}
+              disabled={isSubmitting}
+              required
+              aria-describedby="admin-add-seats-hint"
+            />
+            <p id="admin-add-seats-hint" className="text-xs text-slate-500">
+              How many passengers they can take (not including the driver).
+            </p>
+          </label>
+        )}
 
         {error && (
           <p className="text-sm text-red-600" role="alert">
