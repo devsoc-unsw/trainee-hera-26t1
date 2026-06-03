@@ -9,6 +9,7 @@ import { PlacesAutocompleteInput } from "@/components/places-autocomplete-input"
 import { readApiError } from "@/lib/api-error";
 import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
 import { isValidPin, type PinSelection } from "@/lib/pin";
+import { getTripSession } from "@/lib/trip-session";
 
 const inputClassName =
   "w-full rounded-2xl border border-atlas-teal/20 bg-white px-4 py-3 text-sm text-slate-800 outline-none ring-atlas-teal/25 placeholder:text-slate-400 focus:ring-2";
@@ -33,14 +34,16 @@ export function MemberDetailPopup({
   const mapsConfigured = isGoogleMapsConfigured();
   const [pin, setPin] = useState<PinSelection | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setPin(null);
     setError(null);
-    setSuccess(false);
+    setSuccessMessage(null);
     setIsSaving(false);
+    setIsRemoving(false);
   }, [member.username]);
 
   const address = member.location?.address?.trim();
@@ -57,7 +60,7 @@ export function MemberDetailPopup({
 
     setIsSaving(true);
     setError(null);
-    setSuccess(false);
+    setSuccessMessage(null);
 
     try {
       const res = await fetch("/api/participants/update-location", {
@@ -79,12 +82,52 @@ export function MemberDetailPopup({
       }
 
       setPin(null);
-      setSuccess(true);
+      setSuccessMessage("Address saved.");
       onUpdated?.();
     } catch {
       setError("Could not save address");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const onRemoveAddress = async () => {
+    if (!address) return;
+
+    const session = getTripSession();
+    if (!session) {
+      setError("No active trip session found");
+      return;
+    }
+
+    setIsRemoving(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const res = await fetch("/api/participants/update-location", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          username: member.username,
+          trip_id: tripId,
+          trip_code: tripCode,
+          clear: true,
+          caller_username: session.username,
+        }),
+      });
+
+      if (!res.ok) {
+        setError(await readApiError(res, "Could not remove address"));
+        return;
+      }
+
+      setSuccessMessage("Address removed.");
+      onUpdated?.();
+    } catch {
+      setError("Could not remove address");
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -173,9 +216,33 @@ export function MemberDetailPopup({
             Update address (admin)
           </p>
           {!mapsConfigured ? (
-            <p className="text-xs text-amber-900">
-              Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable address search.
-            </p>
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-amber-900">
+                Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable address search.
+              </p>
+              {address && (
+                <>
+                  {error && (
+                    <p className="text-xs text-red-600" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  {successMessage && (
+                    <p className="text-xs text-emerald-600" role="status">
+                      {successMessage}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={onRemoveAddress}
+                    disabled={isRemoving}
+                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-70"
+                  >
+                    {isRemoving ? "Removing…" : "Remove address"}
+                  </button>
+                </>
+              )}
+            </div>
           ) : (
             <form onSubmit={onSaveAddress} className="flex flex-col gap-2">
               <PlacesAutocompleteInput
@@ -183,9 +250,9 @@ export function MemberDetailPopup({
                 value={pin}
                 onChange={(value) => {
                   setPin(value);
-                  setSuccess(false);
+                  setSuccessMessage(null);
                 }}
-                disabled={isSaving}
+                disabled={isSaving || isRemoving}
                 placeholder="Search for a new address…"
                 className={inputClassName}
               />
@@ -194,18 +261,30 @@ export function MemberDetailPopup({
                   {error}
                 </p>
               )}
-              {success && (
+              {successMessage && (
                 <p className="text-xs text-emerald-600" role="status">
-                  Address saved.
+                  {successMessage}
                 </p>
               )}
-              <button
-                type="submit"
-                disabled={isSaving || !isValidPin(pin)}
-                className="rounded-xl bg-atlas-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-atlas-teal-hover disabled:opacity-70"
-              >
-                {isSaving ? "Saving…" : "Save address"}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="submit"
+                  disabled={isSaving || isRemoving || !isValidPin(pin)}
+                  className="rounded-xl bg-atlas-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-atlas-teal-hover disabled:opacity-70"
+                >
+                  {isSaving ? "Saving…" : "Save address"}
+                </button>
+                {address && (
+                  <button
+                    type="button"
+                    onClick={onRemoveAddress}
+                    disabled={isSaving || isRemoving}
+                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-70"
+                  >
+                    {isRemoving ? "Removing…" : "Remove address"}
+                  </button>
+                )}
+              </div>
             </form>
           )}
         </div>

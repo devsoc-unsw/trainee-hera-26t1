@@ -32,6 +32,7 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
   const [pin, setPin] = useState<PinSelection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadParticipant = useCallback(async () => {
@@ -119,6 +120,40 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
     }
   };
 
+  const onRemove = async () => {
+    if (!session?.username || !session?.tripId || !savedLocation?.address) return;
+
+    setIsRemoving(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/participants/update-location", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          username: session.username,
+          trip_id: session.tripId,
+          clear: true,
+        }),
+      });
+
+      if (!res.ok) {
+        setError(await readApiError(res, "Could not remove your address"));
+        return;
+      }
+
+      const json = (await res.json()) as { participant: TripParticipant };
+      setParticipant(json.participant);
+      setSavedLocation(null);
+      setPin(null);
+      onSaved?.();
+    } catch {
+      setError("Could not remove your address");
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   if (isLoading) {
     return <p className="text-sm text-slate-500">Loading…</p>;
   }
@@ -147,16 +182,26 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
       </div>
 
       {hasSavedLocation && savedLocation && (
-        <div className="flex gap-3 rounded-2xl border border-atlas-teal/15 bg-atlas-mist/40 px-4 py-3">
-          <MapPin
-            className="mt-0.5 size-4 shrink-0 text-atlas-teal"
-            strokeWidth={1.75}
-            aria-hidden
-          />
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-atlas-teal">Saved address</p>
-            <p className="mt-0.5 text-sm text-slate-800">{savedLocation.address}</p>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-3 rounded-2xl border border-atlas-teal/15 bg-atlas-mist/40 px-4 py-3">
+            <MapPin
+              className="mt-0.5 size-4 shrink-0 text-atlas-teal"
+              strokeWidth={1.75}
+              aria-hidden
+            />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-atlas-teal">Saved address</p>
+              <p className="mt-0.5 text-sm text-slate-800">{savedLocation.address}</p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={isRemoving || isSaving}
+            className="rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-70"
+          >
+            {isRemoving ? "Removing…" : "Remove address"}
+          </button>
         </div>
       )}
 
@@ -178,7 +223,7 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
               id="dashboard-pin-search"
               value={pin}
               onChange={setPin}
-              disabled={isSaving}
+              disabled={isSaving || isRemoving}
               placeholder={
                 hasSavedLocation
                   ? "Search for a new address…"
@@ -194,7 +239,7 @@ export function ParticipantPinForm({ onSaved }: ParticipantPinFormProps) {
           )}
           <button
             type="submit"
-            disabled={isSaving || !isValidPin(pin)}
+            disabled={isSaving || isRemoving || !isValidPin(pin)}
             className="rounded-2xl bg-atlas-teal px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-atlas-teal-hover disabled:opacity-70"
           >
             {isSaving
