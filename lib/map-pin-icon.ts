@@ -18,12 +18,17 @@ export function mapPinFillColor(fillColor: string): string {
 function pinSvg(fillColor: string, letter: string, isDriver = false): string {
   const fill = mapPinFillColor(fillColor);
   const labelColor = contrastingTextColor(fill);
+  // Lucide Car icon (lucide@0.511.0) — https://lucide.dev/icons/car
   const driverBadge = isDriver
     ? `
-  <circle cx="22" cy="18" r="14.5" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="2.5"/>
-  <circle cx="34" cy="9" r="6.5" fill="#ffffff" stroke="#0f172a" stroke-width="0.7" stroke-opacity="0.28"/>
-  <g fill="${fill}" transform="translate(34 9) scale(0.38) translate(-12 -12)">
-    <path d="M6 14h2l1.2-3.4a1 1 0 0 1 .95-.7h5.7a1 1 0 0 1 .95.7L18 14h2a1 1 0 0 1 1 1v2.2a1 1 0 0 1-1 1h-.9a2.2 2.2 0 0 1-4.2 0h-2.8a2.2 2.2 0 0 1-4.2 0H6a1 1 0 0 1-1-1V15a1 1 0 0 1 1-1zm1.8-3.5L8.8 12h6.4l1-1.5H7.8z"/>
+  <circle cx="33" cy="8" r="8.5" fill="#ffffff" stroke="#0f172a" stroke-width="0.7" stroke-opacity="0.28"/>
+  <g transform="translate(33 8) scale(0.58) translate(-12 -12)">
+    <g fill="none" stroke="${fill}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+      <circle cx="7" cy="17" r="2"/>
+      <path d="M9 17h6"/>
+      <circle cx="17" cy="17" r="2"/>
+    </g>
   </g>`
     : "";
 
@@ -69,7 +74,7 @@ export function createMapPinIcon(
   };
 }
 
-/** Same teardrop pin with a white ring and car badge — same fill colour. */
+/** Same teardrop pin with a car badge — same fill colour. */
 export function createDriverMapPinIcon(
   fillColor: string,
   letter: string,
