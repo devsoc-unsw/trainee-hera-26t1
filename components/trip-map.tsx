@@ -10,6 +10,7 @@ import { loadGoogleMaps } from "@/hooks/use-google-maps";
 import { readApiError } from "@/lib/api-error";
 import {
   createDestinationPinIcon,
+  createDriverMapPinIcon,
   createMapPinIcon,
   DESTINATION_PIN_COLOR,
 } from "@/lib/map-pin-icon";
@@ -158,15 +159,15 @@ export function TripMap({
       };
       const fillColor = p.group_color ?? ATLAS_TEAL;
       const isSelected = selectedUsername === p.username;
+      const letter = p.username.slice(0, 1).toUpperCase();
       const marker = new google.maps.Marker({
         map,
         position,
-        title: p.username,
+        title: p.is_driver ? `${p.username} (driver)` : p.username,
         zIndex: isSelected ? FOCUSED_PIN_Z : MEMBER_PIN_Z,
-        icon: createMapPinIcon(
-          fillColor,
-          p.username.slice(0, 1).toUpperCase(),
-        ),
+        icon: p.is_driver
+          ? createDriverMapPinIcon(fillColor, letter)
+          : createMapPinIcon(fillColor, letter),
         cursor: onMemberSelect ? "pointer" : undefined,
       });
       if (onMemberSelect) {
