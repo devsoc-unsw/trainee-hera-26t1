@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { MemberGroupAssign } from "@/components/trip-dashboard/member-group-assign";
 import { AdminDriverSeatsForm } from "@/components/trip-dashboard/admin-driver-seats-form";
+import { AdminMakeDriverForm } from "@/components/trip-dashboard/admin-make-driver-form";
 import { PlacesAutocompleteInput } from "@/components/places-autocomplete-input";
 import { readApiError } from "@/lib/api-error";
 import { isGoogleMapsConfigured } from "@/lib/google-maps-config";
@@ -181,6 +182,20 @@ export function MemberDetailPopup({
           </dd>
         </div>
       </dl>
+
+      {isAdmin && !member.is_driver && (
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          <p className="mb-2 text-xs font-medium text-atlas-teal">
+            Make driver (admin)
+          </p>
+          <AdminMakeDriverForm
+            tripId={tripId}
+            username={member.username}
+            onSaved={onUpdated}
+            inputClassName={inputClassName}
+          />
+        </div>
+      )}
 
       {isAdmin && !member.is_driver && (
         <div className="mt-4 border-t border-slate-200 pt-4">

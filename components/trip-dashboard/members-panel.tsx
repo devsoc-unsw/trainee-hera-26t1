@@ -1,6 +1,7 @@
 import { Car } from "lucide-react";
 import type { TripMapParticipant } from "@/app/api/trips/map-locations/route";
 import { AdminAddUser } from "@/components/trip-dashboard/admin-add-user";
+import { AdminMakeDriver } from "@/components/trip-dashboard/admin-make-driver";
 import { AdminPromoteUser } from "@/components/trip-dashboard/admin-promote-user";
 import { AdminRemoveUser } from "@/components/trip-dashboard/admin-remove-user";
 import { AdminUpdateDriverSeats } from "@/components/trip-dashboard/admin-update-driver-seats";
@@ -132,6 +133,14 @@ export function MembersPanel({
           members={allMembers}
           currentUsername={currentUsername}
           onPromoted={onMemberPromoted}
+        />
+      )}
+
+      {isAdmin && tripId && allMembers && (
+        <AdminMakeDriver
+          tripId={tripId}
+          members={allMembers}
+          onUpdated={onMemberUpdated}
         />
       )}
 
